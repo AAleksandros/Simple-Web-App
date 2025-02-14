@@ -20,7 +20,7 @@ const goToDashboard = () => {
 
 <template>
   <div class="home-container">
-    <h1>Welcome to MyApp</h1>
+    <h1>Welcome to my Web App</h1>
     <p>This is a simple authentication system using Django and Vue.js.</p>
 
     <div class="buttons">
