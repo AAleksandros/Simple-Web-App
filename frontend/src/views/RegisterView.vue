@@ -48,34 +48,56 @@ const register = async () => {
 
 <style scoped>
 .auth-container {
-  max-width: 300px;
-  margin: auto;
-  text-align: center;
+  max-width: 400px;
+  margin: 0 auto;
   padding: 2rem;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
 }
+
+h2 {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
 input {
-  width: 100%;
   padding: 10px;
-  margin: 5px 0;
-  border: 1px solid #ccc;
+  font-size: 16px;
+  border: 1px solid #ddd;
   border-radius: 5px;
 }
+
 button {
-  width: 100%;
-  padding: 10px;
-  background: #42b883;
+  background-color: #42b883;
   color: white;
+  padding: 10px;
+  font-size: 16px;
   border: none;
-  cursor: pointer;
   border-radius: 5px;
+  cursor: pointer;
 }
+
 button:disabled {
   background: gray;
 }
+
+button:hover {
+  background-color: #2c9a6a;
+}
+
 .success {
   color: green;
   margin-top: 10px;
 }
+
 .error {
   color: red;
   margin-top: 10px;

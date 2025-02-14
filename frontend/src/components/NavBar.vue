@@ -1,5 +1,19 @@
+<template>
+  <nav class="navbar">
+    <div class="logo">MyApp</div>
+    <div class="nav-links">
+      <router-link to="/">Home</router-link>
+      <template v-if="!authStore.isAuthenticated">
+        <router-link to="/register">Register</router-link>
+        <router-link to="/login">Login</router-link>
+      </template>
+      <button v-else class="logout-btn" @click="logout">Logout</button>
+    </div>
+  </nav>
+</template>
+
 <script setup lang="ts">
-import { useAuthStore } from "../stores/auth.ts";
+import { useAuthStore } from "../stores/auth";
 import { useRouter } from "vue-router";
 
 const authStore = useAuthStore();
@@ -7,61 +21,53 @@ const router = useRouter();
 
 const logout = () => {
   authStore.logout();
-  router.push("/login");
-  setTimeout(() => window.location.reload(), 500);
+  router.push("/");
 };
 </script>
-
-<template>
-  <nav class="navbar">
-    <h1 class="logo">MyApp</h1>
-    <div class="nav-links">
-      <RouterLink to="/">Home</RouterLink>
-      <RouterLink v-if="!authStore.isAuthenticated" to="/register">Register</RouterLink>
-      <RouterLink v-if="!authStore.isAuthenticated" to="/login">Login</RouterLink>
-      <button v-if="authStore.isAuthenticated" @click="logout" class="logout-btn">
-        Logout
-      </button>
-    </div>
-  </nav>
-</template>
 
 <style scoped>
 .navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #1e1e1e;
-  padding: 1rem 2rem;
+  padding: 10px 20px;
+  background: #222;
   color: white;
 }
 
 .logo {
-  font-size: 1.5rem;
+  font-size: 24px;
   font-weight: bold;
 }
 
 .nav-links {
   display: flex;
-  gap: 1rem;
+  align-items: center;
+  gap: 15px;
 }
 
 .nav-links a {
-  text-decoration: none;
   color: white;
+  text-decoration: none;
+  font-size: 16px;
+  transition: color 0.3s ease;
+}
+
+.nav-links a:hover {
+  color: #42b883;
 }
 
 .logout-btn {
-  background: #e63946;
+  background: #e74c3c;
   color: white;
+  padding: 8px 15px;
   border: none;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  font-size: 1rem;
   border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
 }
 
 .logout-btn:hover {
-  background: #b71c1c;
+  background: #c0392b;
 }
 </style>
