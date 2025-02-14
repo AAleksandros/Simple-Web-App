@@ -12,15 +12,21 @@ const authStore = useAuthStore();
 const router = useRouter();
 
 const login = async () => {
+  errorMessage.value = "";
+
   try {
     const response = await api.post("login/", { email: email.value, password: password.value });
-    authStore.login(response.data.access);
-    localStorage.setItem("access_token", response.data.access);
 
-    router.push("/dashboard"); 
+    if (response.data.access && response.data.user) {
+      authStore.login(response.data.access, response.data.user);
+      
+      router.push(response.data.user.is_staff ? "/admin-dashboard" : "/dashboard");
+    } else {
+      throw new Error("Invalid server response.");
+    }
   } catch (err) {
     if (axios.isAxiosError(err)) {
-      errorMessage.value = err.response?.data?.error || "Login failed.";
+      errorMessage.value = err.response?.data?.error || "Invalid email or password.";
     } else {
       errorMessage.value = "An unexpected error occurred.";
     }

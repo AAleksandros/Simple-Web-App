@@ -1,56 +1,61 @@
-<template>
-  <nav class="navbar">
-    <div class="logo">MyApp</div>
-    <div class="nav-links">
-      <router-link to="/">Home</router-link>
-      <template v-if="!authStore.isAuthenticated">
-        <router-link to="/register">Register</router-link>
-        <router-link to="/login">Login</router-link>
-      </template>
-      <button v-else class="logout-btn" @click="logout">Logout</button>
-    </div>
-  </nav>
-</template>
-
 <script setup lang="ts">
 import { useAuthStore } from "../stores/auth";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
 
 const authStore = useAuthStore();
 const router = useRouter();
 
+const isAuthenticated = computed(() => authStore.isAuthenticated);
+const isAdmin = computed(() => authStore.user?.is_staff === true); // Checks admin status
+
 const logout = () => {
   authStore.logout();
   router.push("/");
+  setTimeout(() => window.location.reload(), 500); // Ensures a full logout reset
 };
 </script>
+
+<template>
+  <nav class="navbar">
+    <h1 class="logo">MyApp</h1>
+    <div class="nav-links">
+      <RouterLink to="/">Home</RouterLink>
+      <RouterLink v-if="!isAuthenticated" to="/register">Register</RouterLink>
+      <RouterLink v-if="!isAuthenticated" to="/login">Login</RouterLink>
+      <RouterLink v-if="isAuthenticated" to="/dashboard">Dashboard</RouterLink>
+      <RouterLink v-if="isAuthenticated && isAdmin" to="/admin-dashboard">Admin Panel</RouterLink>
+      <button v-if="isAuthenticated" @click="logout" class="logout-btn">Logout</button>
+    </div>
+  </nav>
+</template>
 
 <style scoped>
 .navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 20px;
-  background: #222;
+  background: #1e1e1e;
+  padding: 1rem 2rem;
   color: white;
 }
 
 .logo {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: bold;
 }
 
 .nav-links {
   display: flex;
+  gap: 1rem;
   align-items: center;
-  gap: 15px;
 }
 
 .nav-links a {
-  color: white;
   text-decoration: none;
-  font-size: 16px;
-  transition: color 0.3s ease;
+  color: white;
+  font-size: 1rem;
+  transition: color 0.3s ease-in-out;
 }
 
 .nav-links a:hover {
@@ -58,16 +63,17 @@ const logout = () => {
 }
 
 .logout-btn {
-  background: #e74c3c;
+  background: #e63946;
   color: white;
-  padding: 8px 15px;
   border: none;
-  border-radius: 5px;
+  padding: 0.5rem 1rem;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 1rem;
+  border-radius: 5px;
+  transition: background 0.3s ease-in-out;
 }
 
 .logout-btn:hover {
-  background: #c0392b;
+  background: #b71c1c;
 }
 </style>

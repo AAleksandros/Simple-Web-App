@@ -1,4 +1,4 @@
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
@@ -10,10 +10,9 @@ from django.core.exceptions import ValidationError
 from .serializers import CustomTokenObtainPairSerializer
 import re
 
-from .models import CustomUser
-
 User = get_user_model()
 
+### User Registration View
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
@@ -24,13 +23,12 @@ class RegisterView(APIView):
         if not email or not password:
             return Response({"error": "Email and password are required."}, status=status.HTTP_400_BAD_REQUEST)
 
-         # ✅ Use Django’s built-in email validator
         try:
             validate_email(email)
         except ValidationError:
             return Response({"error": "Invalid email format."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Password validation
+        # Password Validation
         if len(password) < 8:
             return Response({"error": "Password must be at least 8 characters long."}, status=status.HTTP_400_BAD_REQUEST)
         if not re.search(r"[A-Z]", password) or not re.search(r"[a-z]", password):
@@ -45,18 +43,36 @@ class RegisterView(APIView):
         if User.objects.filter(email=email).exists():
             return Response({"error": "Email is already registered."}, status=status.HTTP_400_BAD_REQUEST)
 
-        user = CustomUser.objects.create_user(email=email, password=password)
+        user = User.objects.create_user(email=email, password=password)
         return Response({"message": "User registered successfully."}, status=status.HTTP_201_CREATED)
 
-@api_view(['GET'])
+### Protected View for Testing Authentication
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def protected_view(request):
-    """A protected view that requires authentication."""
     return Response({"message": "You are authenticated!", "user": request.user.email})
 
+### Custom Login View (Includes User Data in Response)
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+
+        try:
+            user = User.objects.get(email=request.data["email"])
+            response.data["user"] = {
+                "id": user.id,
+                "email": user.email,
+                "is_active": user.is_active,
+                "is_staff": user.is_staff
+            }
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        return response
+
+### Admin Panel - Get All Users
 class AdminUserListView(APIView):
     permission_classes = [IsAdminUser]
 
@@ -64,30 +80,44 @@ class AdminUserListView(APIView):
         users = User.objects.all().values("id", "email", "is_active", "is_staff")
         return Response(users, status=status.HTTP_200_OK)
 
+### Admin Panel - Get, Update, or Delete a Specific User
 class AdminUserDetailView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request, user_id):
-        try:
-            user = User.objects.get(id=user_id)
-            return Response({"id": user.id, "email": user.email, "is_active": user.is_active, "is_staff": user.is_staff})
-        except User.DoesNotExist:
+        user = self.get_user(user_id)
+        if not user:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"id": user.id, "email": user.email, "is_active": user.is_active, "is_staff": user.is_staff})
 
     def put(self, request, user_id):
-        try:
-            user = User.objects.get(id=user_id)
-            user.is_active = request.data.get("is_active", user.is_active)
-            user.is_staff = request.data.get("is_staff", user.is_staff)
-            user.save()
-            return Response({"message": "User updated successfully"})
-        except User.DoesNotExist:
+        user = self.get_user(user_id)
+        if not user:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    def delete(self, request, user_id):
+        is_active = request.data.get("is_active")
+        is_staff = request.data.get("is_staff")
+
         try:
-            user = User.objects.get(id=user_id)
-            user.delete()
-            return Response({"message": "User deleted successfully"})
-        except User.DoesNotExist:
+            if is_active is not None:
+                user.is_active = bool(is_active)
+            if is_staff is not None:
+                user.is_staff = bool(is_staff)
+            user.save()
+            return Response({"message": "User updated successfully"})
+        except ValueError:
+            return Response({"error": "Invalid value for user update"}, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, user_id):
+        user = self.get_user(user_id)
+        if not user:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        user.delete()
+        return Response({"message": "User deleted successfully"})
+
+    def get_user(self, user_id):
+        """Helper function to fetch user by ID"""
+        try:
+            return User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return None
