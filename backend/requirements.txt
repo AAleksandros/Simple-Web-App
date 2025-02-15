@@ -7,3 +7,5 @@ gunicorn
 djangorestframework-simplejwt
 python-dotenv
 drf-yasg
+requests
+azure-communication-email

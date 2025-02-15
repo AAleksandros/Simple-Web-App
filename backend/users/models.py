@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.core.validators import EmailValidator, MinLengthValidator, RegexValidator
 from django.db import models
+import uuid
 
 class CustomUserManager(BaseUserManager):
     """Manager for CustomUser model."""
@@ -10,7 +11,7 @@ class CustomUserManager(BaseUserManager):
         if not email:
             raise ValueError("The Email field must be set.")
         email = self.normalize_email(email)
-        extra_fields.setdefault("is_active", True)
+        extra_fields.setdefault("is_active", False)  # Default to inactive until email verified
 
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
@@ -21,6 +22,7 @@ class CustomUserManager(BaseUserManager):
         """Create and return a superuser with admin privileges."""
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)  # Superusers always active
 
         return self.create_user(email, password, **extra_fields)
 
@@ -45,8 +47,14 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         verbose_name="Password"
     )
 
-    is_active = models.BooleanField(default=True, verbose_name="Active")
+    is_active = models.BooleanField(default=False, verbose_name="Active")
     is_staff = models.BooleanField(default=False, verbose_name="Staff Status")
+
+    # Email Verification Code
+    verification_code = models.CharField(max_length=6, blank=True, null=True)
+
+    # Password Reset Token
+    password_reset_token = models.UUIDField(default=None, null=True, blank=True, unique=True)
 
     groups = models.ManyToManyField(
         "auth.Group",
