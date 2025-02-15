@@ -1,33 +1,23 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { useRouter } from "vue-router";
 import api from "../api";
 
 const email = ref("");
-const password = ref("");
 const loading = ref(false);
 const successMessage = ref("");
 const errorMessage = ref("");
-const router = useRouter();
 
-const register = async () => {
+const requestPasswordReset = async () => {
   loading.value = true;
   successMessage.value = "";
   errorMessage.value = "";
 
   try {
-    await api.post("register/", {
-      email: email.value,
-      password: password.value,
-    });
+    await api.post("forgot-password/", { email: email.value });
 
-    localStorage.setItem("pending_verification_email", email.value);
-
-    successMessage.value = "Registration successful! Check your email for a verification code.";
-
-    setTimeout(() => router.push("/verify-email"), 2000);
+    successMessage.value = "If this email exists, a reset link has been sent.";
   } catch (error: any) {
-    errorMessage.value = error.response?.data?.error || "Registration failed.";
+    errorMessage.value = error.response?.data?.error || "Failed to request reset.";
   } finally {
     loading.value = false;
   }
@@ -36,14 +26,16 @@ const register = async () => {
 
 <template>
   <div class="auth-container">
-    <h2>Register</h2>
-    <form @submit.prevent="register">
-      <input type="email" v-model="email" placeholder="Email" required />
-      <input type="password" v-model="password" placeholder="Password" required />
+    <h2>Forgot Password</h2>
+    <p>Enter your email to receive a password reset link.</p>
+
+    <form @submit.prevent="requestPasswordReset">
+      <input type="email" v-model="email" placeholder="Enter your email" required />
       <button type="submit" :disabled="loading">
-        {{ loading ? "Registering..." : "Register" }}
+        {{ loading ? "Sending..." : "Send Reset Link" }}
       </button>
     </form>
+
     <p v-if="successMessage" class="success">{{ successMessage }}</p>
     <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
   </div>
@@ -62,7 +54,12 @@ const register = async () => {
 
 h2 {
   font-size: 24px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
+}
+
+p {
+  font-size: 16px;
+  margin-bottom: 15px;
 }
 
 form {
@@ -76,6 +73,7 @@ input {
   font-size: 16px;
   border: 1px solid #ddd;
   border-radius: 5px;
+  text-align: center;
 }
 
 button {

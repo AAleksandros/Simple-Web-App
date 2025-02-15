@@ -32,6 +32,11 @@ const login = async () => {
     }
   }
 };
+
+// Navigate to Forgot Password page
+const goToForgotPassword = () => {
+  router.push("/forgot-password");
+};
 </script>
 
 <template>
@@ -43,6 +48,9 @@ const login = async () => {
       <button type="submit">Login</button>
     </form>
     <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+
+    <!-- Forgot Password Link -->
+    <button class="forgot-password-btn" @click="goToForgotPassword">Forgot Password?</button>
   </div>
 </template>
 
@@ -92,5 +100,20 @@ button:hover {
 .error {
   color: red;
   margin-top: 10px;
+}
+
+/* Forgot Password Button */
+.forgot-password-btn {
+  background: none;
+  border: none;
+  color: #42b883;
+  cursor: pointer;
+  margin-top: 10px;
+  font-size: 14px;
+  text-decoration: underline;
+}
+
+.forgot-password-btn:hover {
+  color: #2c9a6a;
 }
 </style>
