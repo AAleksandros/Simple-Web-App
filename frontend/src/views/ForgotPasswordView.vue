@@ -30,7 +30,11 @@ const requestPasswordReset = async () => {
     <p>Enter your email to receive a password reset link.</p>
 
     <form @submit.prevent="requestPasswordReset">
-      <input type="email" v-model="email" placeholder="Enter your email" required />
+      <div class="input-group">
+        <label for="email">Email</label>
+        <input id="email" type="email" v-model="email" required />
+      </div>
+
       <button type="submit" :disabled="loading">
         {{ loading ? "Sending..." : "Send Reset Link" }}
       </button>
@@ -68,12 +72,24 @@ form {
   gap: 15px;
 }
 
+.input-group {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+label {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #333;
+}
+
 input {
   padding: 10px;
   font-size: 16px;
   border: 1px solid #ddd;
   border-radius: 5px;
-  text-align: center;
 }
 
 button {

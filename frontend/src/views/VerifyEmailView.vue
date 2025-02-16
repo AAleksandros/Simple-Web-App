@@ -28,11 +28,12 @@ const verifyEmail = async () => {
     });
 
     successMessage.value = "Email verified successfully! Redirecting...";
-    
+
     // Clear stored email & Redirect to login
     localStorage.removeItem("pending_verification_email");
     setTimeout(() => router.push("/login"), 2000);
   } catch (error: any) {
+    console.error("Verification error:", error.response);
     errorMessage.value = error.response?.data?.error || "Verification failed.";
   } finally {
     loading.value = false;
@@ -46,10 +47,15 @@ const resendCode = async () => {
   successMessage.value = "";
 
   try {
-    await api.post("request-verification/", { email: email.value });
+    await api.post("resend-verification/", { email: email.value });
     successMessage.value = "New verification code sent!";
   } catch (error: any) {
-    errorMessage.value = error.response?.data?.error || "Failed to resend code.";
+    console.error("Resend error:", error.response);
+    if (error.response && error.response.status === 429) {
+      errorMessage.value = "Please wait before requesting another verification code.";
+    } else {
+      errorMessage.value = error.response?.data?.error || "Failed to resend code.";
+    }
   } finally {
     loading.value = false;
   }
@@ -62,7 +68,11 @@ const resendCode = async () => {
     <p>We have sent a verification code to: <strong>{{ email }}</strong></p>
 
     <form @submit.prevent="verifyEmail">
-      <input type="text" v-model="verificationCode" placeholder="Enter Verification Code" required />
+      <div class="input-group">
+        <label for="verificationCode">Enter Verification Code</label>
+        <input id="verificationCode" type="text" v-model="verificationCode" required />
+      </div>
+
       <button type="submit" :disabled="loading">
         {{ loading ? "Verifying..." : "Verify Email" }}
       </button>
@@ -104,12 +114,24 @@ form {
   gap: 15px;
 }
 
+.input-group {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+label {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #333;
+}
+
 input {
   padding: 10px;
   font-size: 16px;
   border: 1px solid #ddd;
   border-radius: 5px;
-  text-align: center;
 }
 
 button {
@@ -133,6 +155,10 @@ button:hover {
 .resend-button {
   background-color: #f39c12;
   margin-top: 10px;
+}
+
+.resend-button:hover{
+  background-color: #cf8308;
 }
 
 .success {

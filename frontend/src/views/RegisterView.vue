@@ -5,24 +5,36 @@ import api from "../api";
 
 const email = ref("");
 const password = ref("");
+const confirmPassword = ref("");
 const loading = ref(false);
 const successMessage = ref("");
 const errorMessage = ref("");
 const router = useRouter();
 
 const register = async () => {
-  loading.value = true;
   successMessage.value = "";
   errorMessage.value = "";
+
+  if (!email.value || !password.value || !confirmPassword.value) {
+    errorMessage.value = "Email, password, and confirmation are required.";
+    return;
+  }
+
+  if (password.value !== confirmPassword.value) {
+    errorMessage.value = "Passwords do not match.";
+    return;
+  }
+
+  loading.value = true;
 
   try {
     await api.post("register/", {
       email: email.value,
       password: password.value,
+      confirm_password: confirmPassword.value,
     });
 
     localStorage.setItem("pending_verification_email", email.value);
-
     successMessage.value = "Registration successful! Check your email for a verification code.";
 
     setTimeout(() => router.push("/verify-email"), 2000);
@@ -38,12 +50,31 @@ const register = async () => {
   <div class="auth-container">
     <h2>Register</h2>
     <form @submit.prevent="register">
-      <input type="email" v-model="email" placeholder="Email" required />
-      <input type="password" v-model="password" placeholder="Password" required />
+      <div class="input-group">
+        <label for="email">Email</label>
+        <input id="email" type="email" v-model="email" required />
+      </div>
+
+      <div class="input-group">
+        <label for="password">Password</label>
+        <input id="password" type="password" v-model="password" required />
+      </div>
+
+      <!-- Password Hint -->
+      <p class="password-hint" v-if="password">
+        Password must be at least 8 characters, contain uppercase & lowercase letters, a number, and a special character.
+      </p>
+
+      <div class="input-group">
+        <label for="confirmPassword">Confirm Password</label>
+        <input id="confirmPassword" type="password" v-model="confirmPassword" required />
+      </div>
+
       <button type="submit" :disabled="loading">
         {{ loading ? "Registering..." : "Register" }}
       </button>
     </form>
+    
     <p v-if="successMessage" class="success">{{ successMessage }}</p>
     <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
   </div>
@@ -71,11 +102,32 @@ form {
   gap: 15px;
 }
 
+.input-group {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+label {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #333;
+}
+
 input {
   padding: 10px;
   font-size: 16px;
   border: 1px solid #ddd;
   border-radius: 5px;
+}
+
+/* Password hint styling */
+.password-hint {
+  font-size: 14px;
+  color: #666;
+  margin-top: -10px;
+  margin-bottom: 10px;
 }
 
 button {

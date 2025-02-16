@@ -19,7 +19,6 @@ const login = async () => {
 
     if (response.data.access && response.data.user) {
       authStore.login(response.data.access, response.data.user);
-      
       router.push(response.data.user.is_staff ? "/admin-dashboard" : "/dashboard");
     } else {
       throw new Error("Invalid server response.");
@@ -43,13 +42,22 @@ const goToForgotPassword = () => {
   <div class="auth-container">
     <h2>Login</h2>
     <form @submit.prevent="login">
-      <input type="email" v-model="email" placeholder="Email" required />
-      <input type="password" v-model="password" placeholder="Password" required />
+      <div class="input-group">
+        <label for="email">Email</label>
+        <input id="email" type="email" v-model="email" required />
+      </div>
+
+      <div class="input-group">
+        <label for="password">Password</label>
+        <input id="password" type="password" v-model="password" required />
+      </div>
+
       <button type="submit">Login</button>
     </form>
+
     <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
 
-    <!-- Forgot Password Link -->
+    <!-- Forgot Password Button -->
     <button class="forgot-password-btn" @click="goToForgotPassword">Forgot Password?</button>
   </div>
 </template>
@@ -76,6 +84,19 @@ form {
   gap: 15px;
 }
 
+.input-group {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+label {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #333;
+}
+
 input {
   padding: 10px;
   font-size: 16px;
@@ -83,6 +104,7 @@ input {
   border-radius: 5px;
 }
 
+/* Default button styles */
 button {
   background-color: #42b883;
   color: white;
@@ -97,11 +119,6 @@ button:hover {
   background-color: #2c9a6a;
 }
 
-.error {
-  color: red;
-  margin-top: 10px;
-}
-
 /* Forgot Password Button */
 .forgot-password-btn {
   background: none;
@@ -111,9 +128,22 @@ button:hover {
   margin-top: 10px;
   font-size: 14px;
   text-decoration: underline;
+  padding: 5px;
 }
 
 .forgot-password-btn:hover {
   color: #2c9a6a;
+  background: none !important;
+  box-shadow: none;
+}
+
+button:disabled {
+  background: gray;
+  cursor: not-allowed;
+}
+
+.error {
+  color: red;
+  margin-top: 10px;
 }
 </style>
