@@ -2,6 +2,8 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.core.validators import EmailValidator, MinLengthValidator, RegexValidator
 from django.db import models
 import uuid
+from datetime import datetime, timedelta
+from django.utils.timezone import now
 
 class CustomUserManager(BaseUserManager):
     """Manager for CustomUser model."""
@@ -52,9 +54,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     # Email Verification Code
     verification_code = models.CharField(max_length=6, blank=True, null=True)
+    verification_code_sent_at = models.DateTimeField(null=True, blank=True)  # Track last request time
 
     # Password Reset Token
     password_reset_token = models.UUIDField(default=None, null=True, blank=True, unique=True)
+    password_reset_requested_at = models.DateTimeField(null=True, blank=True)  # Track last request time
 
     groups = models.ManyToManyField(
         "auth.Group",
@@ -74,3 +78,15 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+    def can_request_verification_code(self):
+        """Check if the user can request a new verification code (rate limit: every 60 seconds)."""
+        if self.verification_code_sent_at and (now() - self.verification_code_sent_at < timedelta(seconds=60)):
+            return False
+        return True
+
+    def can_request_password_reset(self):
+        """Check if the user can request a password reset (rate limit: every 5 minutes)."""
+        if self.password_reset_requested_at and (now() - self.password_reset_requested_at < timedelta(minutes=5)):
+            return False
+        return True

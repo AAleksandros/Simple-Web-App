@@ -8,6 +8,7 @@ from django.contrib.auth import get_user_model
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from users.utils.email_service import send_verification_email, send_password_reset_email, generate_verification_code
+from django.utils.timezone import now
 import random
 import uuid
 import re
@@ -21,9 +22,13 @@ class RegisterView(APIView):
     def post(self, request):
         email = request.data.get("email")
         password = request.data.get("password")
+        confirm_password = request.data.get("confirm_password")
 
-        if not email or not password:
-            return Response({"error": "Email and password are required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not email or not password or not confirm_password:
+            return Response({"error": "Email, password, and confirmation are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if password != confirm_password:
+            return Response({"error": "Passwords do not match."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             validate_email(email)
@@ -51,6 +56,7 @@ class RegisterView(APIView):
         user = User.objects.create_user(email=email, password=password)
         user.is_active = False
         user.verification_code = verification_code
+        user.verification_code_sent_at = now()
         user.save()
 
         # Send email
@@ -78,7 +84,7 @@ class VerifyEmailView(APIView):
         except User.DoesNotExist:
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
-### Resend Verification Code
+### Resend Verification Code (Rate-limited to 60s)
 class ResendVerificationEmailView(APIView):
     permission_classes = [AllowAny]
 
@@ -90,8 +96,12 @@ class ResendVerificationEmailView(APIView):
             if user.is_active:
                 return Response({"message": "Email is already verified."}, status=status.HTTP_400_BAD_REQUEST)
 
+            if not user.can_request_verification_code():
+                return Response({"error": "Please wait before requesting another verification code."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
             verification_code = generate_verification_code()
             user.verification_code = verification_code
+            user.verification_code_sent_at = now()
             user.save()
 
             send_verification_email(email, verification_code)
@@ -100,7 +110,7 @@ class ResendVerificationEmailView(APIView):
         except User.DoesNotExist:
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
-### Forgot Password Request (Sends Reset Token)
+### Forgot Password Request (Rate-limited to 5 min)
 class ForgotPasswordView(APIView):
     permission_classes = [AllowAny]
 
@@ -109,8 +119,13 @@ class ForgotPasswordView(APIView):
 
         try:
             user = User.objects.get(email=email)
+
+            if not user.can_request_password_reset():
+                return Response({"error": "Please wait before requesting another password reset."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
             reset_token = str(uuid.uuid4())
             user.password_reset_token = reset_token
+            user.password_reset_requested_at = now()
             user.save()
 
             send_password_reset_email(email, reset_token)
@@ -126,20 +141,31 @@ class ResetPasswordView(APIView):
     def post(self, request):
         token = request.data.get("token")
         new_password = request.data.get("new_password")
+        confirm_password = request.data.get("confirm_password")
+
+        # Validate required fields
+        if not token or not new_password or not confirm_password:
+            return Response({"error": "Token, new password, and confirmation are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Ensure passwords match
+        if new_password != confirm_password:
+            return Response({"error": "Passwords do not match."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             user = User.objects.get(password_reset_token=token)
-
-            if len(new_password) < 8:
-                return Response({"error": "Password must be at least 8 characters long."}, status=status.HTTP_400_BAD_REQUEST)
-
-            user.set_password(new_password)
-            user.password_reset_token = None
-            user.save()
-
-            return Response({"message": "Password reset successfully."}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({"error": "Invalid or expired reset token."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Validate new password length
+        if len(new_password) < 8:
+            return Response({"error": "Password must be at least 8 characters long."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Reset password and remove token
+        user.set_password(new_password)
+        user.password_reset_token = None
+        user.save()
+
+        return Response({"message": "Password reset successfully."}, status=status.HTTP_200_OK)
 
 ### User Login
 class CustomTokenObtainPairView(TokenObtainPairView):
