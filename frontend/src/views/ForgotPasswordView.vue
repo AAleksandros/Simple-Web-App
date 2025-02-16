@@ -7,19 +7,42 @@ const loading = ref(false);
 const successMessage = ref("");
 const errorMessage = ref("");
 
+const RATE_LIMIT_MS = 0 * 60 * 1000; // 5 minutes
+const FAKE_WAIT_MS = 2000; // 2 seconds delay
+
 const requestPasswordReset = async () => {
-  loading.value = true;
   successMessage.value = "";
   errorMessage.value = "";
 
+  const lastRequestTime = localStorage.getItem("last_reset_request");
+  const now = Date.now();
+
+  // Prevent spam by checking time difference
+  if (lastRequestTime && now - Number(lastRequestTime) < RATE_LIMIT_MS) {
+    errorMessage.value = "Please wait before requesting another reset link.";
+    return;
+  }
+
+  loading.value = true;
+
   try {
-    await api.post("forgot-password/", { email: email.value });
+    const response = await api.post("forgot-password/", { email: email.value });
+
+    localStorage.setItem("last_reset_request", now.toString());
 
     successMessage.value = "If this email exists, a reset link has been sent.";
   } catch (error: any) {
-    errorMessage.value = error.response?.data?.error || "Failed to request reset.";
+    if (error.response?.status === 404) {
+      setTimeout(() => {
+        successMessage.value = "If this email exists, a reset link has been sent.";
+      }, FAKE_WAIT_MS);
+    } else {
+      errorMessage.value = error.response?.data?.error || "An unexpected error occurred.";
+    }
   } finally {
-    loading.value = false;
+    setTimeout(() => {
+      loading.value = false;
+    }, FAKE_WAIT_MS);
   }
 };
 </script>

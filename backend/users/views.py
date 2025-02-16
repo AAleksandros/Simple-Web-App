@@ -130,9 +130,9 @@ class ForgotPasswordView(APIView):
 
             send_password_reset_email(email, reset_token)
 
-            return Response({"message": "Password reset email sent."}, status=status.HTTP_200_OK)
+            return Response({"message": "If this email exists, a reset link has been sent."}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
-            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": "If this email exists, a reset link has been sent."}, status=status.HTTP_404_NOT_FOUND)
 
 ### Reset Password
 class ResetPasswordView(APIView):
