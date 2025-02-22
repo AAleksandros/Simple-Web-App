@@ -18,9 +18,8 @@ const logout = () => {
 
 <template>
   <nav class="navbar">
-    <h1 class="logo">MyApp</h1>
+    <RouterLink to="/" class="logo">MyApp</RouterLink>
     <div class="nav-links">
-      <RouterLink to="/">Home</RouterLink>
       <RouterLink v-if="!isAuthenticated" to="/register">Register</RouterLink>
       <RouterLink v-if="!isAuthenticated" to="/login">Login</RouterLink>
       <RouterLink v-if="isAuthenticated" to="/dashboard">Dashboard</RouterLink>
@@ -43,6 +42,13 @@ const logout = () => {
 .logo {
   font-size: 1.5rem;
   font-weight: bold;
+  text-decoration: none;
+  color: white;
+  transition: color 0.3s ease-in-out;
+}
+
+.logo:hover {
+  color: #42b883;
 }
 
 .nav-links {

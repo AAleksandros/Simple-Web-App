@@ -30,11 +30,11 @@ const requestPasswordReset = async () => {
 
     localStorage.setItem("last_reset_request", now.toString());
 
-    successMessage.value = "If this email exists, a reset link has been sent.";
+    successMessage.value = "If this email exists, a reset link has been sent. \nMake sure to check your spam folder!";
   } catch (error: any) {
     if (error.response?.status === 404) {
       setTimeout(() => {
-        successMessage.value = "If this email exists, a reset link has been sent.";
+        successMessage.value = "If this email exists, a reset link has been sent. \nMake sure to check your spam folder!";
       }, FAKE_WAIT_MS);
     } else {
       errorMessage.value = error.response?.data?.error || "An unexpected error occurred.";
@@ -136,6 +136,7 @@ button:hover {
 .success {
   color: green;
   margin-top: 10px;
+  white-space: pre-line;
 }
 
 .error {

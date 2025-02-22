@@ -16,14 +16,21 @@ const selectedUserStatus = ref({ is_active: false, is_staff: false });
 
 const fetchUsers = async () => {
   try {
+    console.log("Fetching users from:", api.defaults.baseURL);
+    console.log("Sending Authorization:", `Bearer ${authStore.token}`);
+
     const response = await api.get("admin/users/", {
       headers: { Authorization: `Bearer ${authStore.token}` },
     });
+
+    console.log("Fetched users:", response.data);
     users.value = response.data;
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Fetch Error Details:", error.response ? error.response.data : error.message);
     errorMessage.value = "Failed to fetch users.";
   }
 };
+
 
 const openModal = (action: "delete" | "update", userId: number, userStatus?: { is_active: boolean; is_staff: boolean }) => {
   showModal.value = true;
@@ -52,8 +59,14 @@ const confirmAction = async () => {
         { is_active: selectedUserStatus.value.is_active, is_staff: selectedUserStatus.value.is_staff },
         { headers: { Authorization: `Bearer ${authStore.token}` } }
       );
-      successMessage.value = "User updated successfully!";
-      fetchUsers();
+
+      const updatedUser = users.value.find((user) => user.id === selectedUserId.value);
+      if (updatedUser) {
+        updatedUser.is_active = selectedUserStatus.value.is_active;
+        updatedUser.is_staff = selectedUserStatus.value.is_staff;
+      }
+
+    successMessage.value = "User updated successfully!";
     } catch (error) {
       errorMessage.value = "Failed to update user.";
     }
@@ -82,7 +95,7 @@ onMounted(fetchUsers);
         </tr>
       </thead>
       <tbody>
-        <tr v-for="user in users" :key="user.id">
+        <tr v-for="(user, index) in users" :key="user.id || index">
           <td>{{ user.id }}</td>
           <td>{{ user.email }}</td>
           <td>

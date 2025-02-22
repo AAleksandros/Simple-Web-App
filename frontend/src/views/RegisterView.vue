@@ -35,7 +35,7 @@ const register = async () => {
     });
 
     localStorage.setItem("pending_verification_email", email.value);
-    successMessage.value = "Registration successful! Check your email for a verification code.";
+    successMessage.value = "Registration successful! Check your email for a verification code.\nMake sure to check your spam folder!";
 
     setTimeout(() => router.push("/verify-email"), 2000);
   } catch (error: any) {
@@ -151,6 +151,7 @@ button:hover {
 .success {
   color: green;
   margin-top: 10px;
+  white-space: pre-line;
 }
 
 .error {
