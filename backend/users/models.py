@@ -49,6 +49,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         verbose_name="Password"
     )
 
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
+    country = models.CharField(max_length=100, blank=True, null=True)
+    city = models.CharField(max_length=100, blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+
     is_active = models.BooleanField(default=False, verbose_name="Active")
     is_staff = models.BooleanField(default=False, verbose_name="Staff Status")
 

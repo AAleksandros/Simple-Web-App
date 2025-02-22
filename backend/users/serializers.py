@@ -2,6 +2,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from users.utils.email_service import generate_verification_code
+from .models import CustomUser
 
 User = get_user_model()
 
@@ -61,3 +62,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Manually set the username field for JWT compatibility
         attrs["username"] = user.email  
         return super().validate(attrs)
+    
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ["email", "phone_number", "country", "city", "address"]
