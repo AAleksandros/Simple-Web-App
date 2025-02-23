@@ -23,6 +23,7 @@ const logout = () => {
       <RouterLink v-if="!isAuthenticated" to="/register">Register</RouterLink>
       <RouterLink v-if="!isAuthenticated" to="/login">Login</RouterLink>
       <RouterLink v-if="isAuthenticated" to="/dashboard">Dashboard</RouterLink>
+      <RouterLink v-if="isAuthenticated && !isAdmin" to="/profile">Profile</RouterLink>
       <RouterLink v-if="isAuthenticated && isAdmin" to="/admin-dashboard">Admin Panel</RouterLink>
       <button v-if="isAuthenticated" @click="logout" class="logout-btn">Logout</button>
     </div>
