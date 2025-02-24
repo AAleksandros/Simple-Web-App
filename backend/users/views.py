@@ -5,13 +5,14 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework import status
-from .models import CustomUser
+from .models import CustomUser, UsedPasswordResetToken
 from .serializers import UserProfileSerializer
 from django.contrib.auth import get_user_model
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from users.utils.email_service import send_verification_email, send_password_reset_email, generate_verification_code
 from django.utils.timezone import now
+from datetime import timedelta
 import random
 import uuid
 import re
@@ -130,12 +131,12 @@ class ForgotPasswordView(APIView):
             if not user.can_request_password_reset():
                 return Response({"error": "Please wait before requesting another password reset."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
-            reset_token = str(uuid.uuid4())
-            user.password_reset_token = reset_token
+            # Invalidate the old reset token by generating a new one
+            user.password_reset_token = uuid.uuid4()  
             user.password_reset_requested_at = now()
             user.save()
 
-            send_password_reset_email(email, reset_token)
+            send_password_reset_email(email, str(user.password_reset_token)) 
 
             return Response({"message": "If this email exists, a reset link has been sent."}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
@@ -150,29 +151,52 @@ class ResetPasswordView(APIView):
         new_password = request.data.get("new_password")
         confirm_password = request.data.get("confirm_password")
 
-        # Validate required fields
         if not token or not new_password or not confirm_password:
             return Response({"error": "Token, new password, and confirmation are required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Ensure passwords match
         if new_password != confirm_password:
             return Response({"error": "Passwords do not match."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
+            # Check if token has already been used (blacklist check)
+            if UsedPasswordResetToken.objects.filter(token=token).exists():
+                return Response({"error": "This reset link has already been used."}, status=status.HTTP_400_BAD_REQUEST)
+
             user = User.objects.get(password_reset_token=token)
+
+            if not user.is_reset_token_valid():
+                return Response({"error": "This password reset link has expired. Please request a new one."}, status=status.HTTP_400_BAD_REQUEST)
+
+            user.set_password(new_password)
+
+            UsedPasswordResetToken.objects.create(token=token)
+
+            user.password_reset_token = None
+            user.password_reset_requested_at = None
+            user.save()
+
+            return Response({"message": "Password reset successfully. You can now log in."}, status=status.HTTP_200_OK)
+
         except User.DoesNotExist:
             return Response({"error": "Invalid or expired reset token."}, status=status.HTTP_404_NOT_FOUND)
+        
+### Validate Password Reset Token Before Showing Form
+class ValidateResetTokenView(APIView):
+    permission_classes = [AllowAny]
 
-        # Validate new password length
-        if len(new_password) < 8:
-            return Response({"error": "Password must be at least 8 characters long."}, status=status.HTTP_400_BAD_REQUEST)
+    def post(self, request):
+        token = request.data.get("token")
 
-        # Reset password and remove token
-        user.set_password(new_password)
-        user.password_reset_token = None
-        user.save()
+        try:
+            user = User.objects.get(password_reset_token=token)
 
-        return Response({"message": "Password reset successfully."}, status=status.HTTP_200_OK)
+            if not user.is_reset_token_valid():
+                return Response({"error": "This password reset link has expired. Please request a new one."}, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response({"message": "Token is valid."}, status=status.HTTP_200_OK)
+
+        except User.DoesNotExist:
+            return Response({"error": "Invalid or expired reset token."}, status=status.HTTP_404_NOT_FOUND)
 
 ### User Login
 class CustomTokenObtainPairView(TokenObtainPairView):

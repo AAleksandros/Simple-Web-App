@@ -61,11 +61,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     # Email Verification Code
     verification_code = models.CharField(max_length=6, blank=True, null=True)
-    verification_code_sent_at = models.DateTimeField(null=True, blank=True)  # Track last request time
+    verification_code_sent_at = models.DateTimeField(null=True, blank=True)
 
     # Password Reset Token
     password_reset_token = models.UUIDField(default=None, null=True, blank=True, unique=True)
-    password_reset_requested_at = models.DateTimeField(null=True, blank=True)  # Track last request time
+    password_reset_requested_at = models.DateTimeField(null=True, blank=True)
 
     groups = models.ManyToManyField(
         "auth.Group",
@@ -97,3 +97,22 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         if self.password_reset_requested_at and (now() - self.password_reset_requested_at < timedelta(minutes=5)):
             return False
         return True
+    
+    def is_reset_token_valid(self):
+        """Check if the reset token is still valid (1-hour expiration)."""
+        if not self.password_reset_token or not self.password_reset_requested_at:
+            return False
+        return now() - self.password_reset_requested_at < timedelta(hours=1)
+    
+    def is_reset_token_valid(self):
+        """Check if the reset token is still valid (1-hour expiration)."""
+        if not self.password_reset_token or not self.password_reset_requested_at:
+            return False
+        return now() - self.password_reset_requested_at < timedelta(hours=1)
+
+class UsedPasswordResetToken(models.Model):
+    token = models.UUIDField(unique=True)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.token)

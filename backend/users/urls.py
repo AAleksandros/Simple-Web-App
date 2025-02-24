@@ -8,7 +8,8 @@ from .views import (
     ForgotPasswordView,
     ResetPasswordView,
     ResendVerificationEmailView,
-    UserProfileView
+    UserProfileView,
+    ValidateResetTokenView
 )
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -27,6 +28,7 @@ urlpatterns = [
     path("resend-verification/", ResendVerificationEmailView.as_view(), name="resend_verification"),
     path("forgot-password/", ForgotPasswordView.as_view(), name="forgot_password"),
     path("reset-password/", ResetPasswordView.as_view(), name="reset_password"),
+    path("validate-reset-token/", ValidateResetTokenView.as_view(), name="validate-reset-token"),
 
     # Protected Route (For Testing Authentication)
     path("protected/", CustomTokenObtainPairView.as_view(), name="protected"),
