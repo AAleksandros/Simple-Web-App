@@ -1,18 +1,12 @@
 <script setup lang="ts">
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import NavBar from "./components/NavBar.vue";
-import { RouterView } from "vue-router";
+import { RouterView, RouterLink } from "vue-router";
 
 const route = useRoute();
-const router = useRouter();
 
-// Define paths where we want to hide the navbar
-const hideNavbarPaths = ["/login", "/register", "/", "/forgot-password", "/verify-email"];
-
-// Function to navigate home
-const goHome = () => {
-  router.push("/");
-};
+// Define paths where the navbar should be hidden
+const hideNavbarPaths = ["/login", "/register", "/", "/forgot-password", "/reset-password", "/verify-email"];
 </script>
 
 <template>
@@ -23,24 +17,32 @@ const goHome = () => {
     <NavBar v-if="!hideNavbarPaths.includes(route.path)" />
 
     <!-- Show Home Button when Navbar is hidden -->
-    <button 
+    <RouterLink 
       v-if="hideNavbarPaths.includes(route.path)" 
-      @click="goHome"
-      class="absolute top-4 left-4 px-4 py-2 text-white bg-black/50 backdrop-blur-md rounded-lg shadow-md hover:bg-black/70 transition"
+      to="/"
+      class="home-btn fixed top-4 left-4 z-50"
     >
       Home
-    </button>
+    </RouterLink>
 
-    <!-- Render the page -->
+    <!-- Render the page content -->
     <RouterView />
   </div>
 </template>
 
-<style>
-/* Ensure the button does not interfere with other components */
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
+<style scoped>
+.home-btn {
+  background: black;
+  color: white;
+  text-decoration: none;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: background 0.3s ease-in-out, transform 0.2s ease-in-out;
+}
+
+.home-btn:hover {
+  background: rgb(45, 45, 45);
 }
 </style>

@@ -8,6 +8,7 @@ import axios from "axios";
 const email = ref("");
 const password = ref("");
 const errorMessage = ref("");
+
 const authStore = useAuthStore();
 const router = useRouter();
 
@@ -15,7 +16,10 @@ const login = async () => {
   errorMessage.value = "";
 
   try {
-    const response = await api.post("login/", { email: email.value, password: password.value });
+    const response = await api.post("login/", {
+      email: email.value,
+      password: password.value,
+    });
 
     if (response.data.access && response.data.user) {
       authStore.login(response.data.access, response.data.user);
@@ -32,33 +36,67 @@ const login = async () => {
   }
 };
 
-// Navigate to Forgot Password page
 const goToForgotPassword = () => {
   router.push("/forgot-password");
 };
 </script>
 
 <template>
-  <div class="auth-container">
-    <h2>Login</h2>
-    <form @submit.prevent="login">
-      <div class="input-group">
-        <label for="email">Email</label>
-        <input id="email" type="email" v-model="email" required />
-      </div>
+  <div class="h-screen flex items-center justify-center px-4 bg-cover bg-center"
+       style="background-image: url('/background.png'); background-attachment: fixed;">
+    
+    <div class="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg max-w-md w-full">
+      <h1 class="text-center text-2xl font-bold text-white sm:text-3xl">Login Form</h1>
+      <p class="mt-2 text-center text-white">Sign in to your account below.</p>
 
-      <div class="input-group">
-        <label for="password">Password</label>
-        <input id="password" type="password" v-model="password" required />
-      </div>
+      <form @submit.prevent="login" class="mt-6 space-y-4">
+        <p v-if="errorMessage" class="text-center text-red-500 text-sm">{{ errorMessage }}</p>
 
-      <button type="submit">Login</button>
-    </form>
+        <div>
+          <label for="email" class="sr-only">Email</label>
+          <input
+            type="email"
+            id="email"
+            v-model="email"
+            placeholder="Enter email"
+            class="w-full rounded-lg border-gray-300 p-3 text-sm text-white"
+          />
+        </div>
 
-    <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+        <div>
+          <label for="password" class="sr-only">Password</label>
+          <input
+            type="password"
+            id="password"
+            v-model="password"
+            placeholder="Enter password"
+            class="w-full rounded-lg border-gray-300 p-3 text-sm text-white"
+          />
+        </div>
 
-    <!-- Forgot Password Button -->
-    <button class="forgot-password-btn" @click="goToForgotPassword">Forgot Password?</button>
+        <button
+          type="submit"
+          class="w-full rounded-lg bg-green-600 px-5 py-3 text-sm font-medium text-white"
+        >
+          Sign in
+        </button>
+
+        <p class="text-center text-sm text-black-100">
+          No account?
+          <router-link to="/register" class="underline text-blue-400 hover:text-blue-600">
+            Sign up
+          </router-link>
+        </p>
+
+        <button
+          type="button"
+          class="block mx-auto mt-2 text-sm text-white"
+          @click="goToForgotPassword"
+        >
+          Forgot password?
+        </button>
+      </form>
+    </div>
   </div>
 </template>
 
@@ -104,38 +142,6 @@ input {
   border-radius: 5px;
 }
 
-/* Default button styles */
-button {
-  background-color: #42b883;
-  color: white;
-  padding: 10px;
-  font-size: 16px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #2c9a6a;
-}
-
-/* Forgot Password Button */
-.forgot-password-btn {
-  background: none;
-  border: none;
-  color: #42b883;
-  cursor: pointer;
-  margin-top: 10px;
-  font-size: 14px;
-  text-decoration: underline;
-  padding: 5px;
-}
-
-.forgot-password-btn:hover {
-  color: #2c9a6a;
-  background: none !important;
-  box-shadow: none;
-}
 
 button:disabled {
   background: gray;

@@ -7,77 +7,62 @@ const authStore = useAuthStore();
 const router = useRouter();
 
 const isAuthenticated = computed(() => authStore.isAuthenticated);
-const isAdmin = computed(() => authStore.user?.is_staff === true); // Checks admin status
+const isAdmin = computed(() => authStore.user?.is_staff === true);
 
 const logout = () => {
   authStore.logout();
   router.push("/");
-  setTimeout(() => window.location.reload(), 500); // Ensures a full logout reset
+  setTimeout(() => window.location.reload(), 500);
 };
 </script>
 
 <template>
-  <nav class="navbar">
-    <RouterLink to="/" class="logo">MyApp</RouterLink>
-    <div class="nav-links">
-      <RouterLink v-if="!isAuthenticated" to="/register">Register</RouterLink>
-      <RouterLink v-if="!isAuthenticated" to="/login">Login</RouterLink>
-      <RouterLink v-if="isAuthenticated" to="/dashboard">Dashboard</RouterLink>
-      <RouterLink v-if="isAuthenticated && !isAdmin" to="/profile">Profile</RouterLink>
-      <RouterLink v-if="isAuthenticated && isAdmin" to="/admin-dashboard">Admin Panel</RouterLink>
-      <button v-if="isAuthenticated" @click="logout" class="logout-btn">Logout</button>
-    </div>
-  </nav>
+  <div class="fixed top-4 right-4 flex gap-3 z-50">
+    <!-- Home Button -->
+    <RouterLink to="/" class="nav-btn fixed top-4 left-4 z-50">Home</RouterLink>
+
+    <!-- Show these when NOT logged in -->
+    <RouterLink v-if="!isAuthenticated" to="/register" class="nav-btn">Register</RouterLink>
+    <RouterLink v-if="!isAuthenticated" to="/login" class="nav-btn">Login</RouterLink>
+
+    <!-- Show these when logged in -->
+    <RouterLink v-if="isAuthenticated" to="/dashboard" class="nav-btn">Dashboard</RouterLink>
+    <RouterLink v-if="isAuthenticated && !isAdmin" to="/profile" class="nav-btn">Profile</RouterLink>
+    <RouterLink v-if="isAuthenticated && isAdmin" to="/admin-dashboard" class="nav-btn">Admin Panel</RouterLink>
+
+    <!-- Logout Button -->
+    <button v-if="isAuthenticated" @click="logout" class="logout-btn">Logout</button>
+  </div>
 </template>
 
 <style scoped>
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #1e1e1e;
-  padding: 1rem 2rem;
+/* Floating Button Style */
+.nav-btn {
+  background: black;
   color: white;
-}
-
-.logo {
-  font-size: 1.5rem;
-  font-weight: bold;
   text-decoration: none;
-  color: white;
-  transition: color 0.3s ease-in-out;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: background 0.3s ease-in-out, transform 0.2s ease-in-out;
 }
 
-.logo:hover {
-  color: #42b883;
+.nav-btn:hover {
+  background: rgb(45, 45, 45);
 }
 
-.nav-links {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.nav-links a {
-  text-decoration: none;
-  color: white;
-  font-size: 1rem;
-  transition: color 0.3s ease-in-out;
-}
-
-.nav-links a:hover {
-  color: #42b883;
-}
-
+/* Logout Button */
 .logout-btn {
   background: #e63946;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 1rem;
-  border-radius: 5px;
-  transition: background 0.3s ease-in-out;
+  transition: background 0.3s ease-in-out, transform 0.2s ease-in-out;
 }
 
 .logout-btn:hover {

@@ -19,56 +19,59 @@ const goToDashboard = () => {
 </script>
 
 <template>
-  <div class="home-container">
-    <h1>Welcome to my Web App</h1>
-    <p>This is a simple authentication system using Django and Vue.js.</p>
+  <div class="h-screen w-screen flex items-center justify-center bg-cover bg-center overflow-hidden"
+    style="background-image: url('/background.png');">
+    
+    <!-- Glass Card Container -->
+    <div class="bg-white/25 backdrop-blur-md shadow-xl rounded-lg p-8 max-w-lg w-full text-center border border-white/30">
 
-    <div class="buttons">
-      <!-- Show Register/Login if NOT authenticated -->
-      <template v-if="!authStore.isAuthenticated">
-        <button @click="goToRegister">Register</button>
-        <button @click="goToLogin">Login</button>
-      </template>
+      <h1 class="text-4xl font-bold text-white drop-shadow-md">
+        Welcome to <br /> 
+        <span class="text-blue-300">My Web App</span>
+      </h1>
+      <p class="text-white/90 mt-2 text-lg">A modern auth system demo.</p>
 
-      <!-- Show Dashboard button if already logged in -->
-      <template v-else>
-        <button class="dashboard-button" @click="goToDashboard">Go to Dashboard</button>
-      </template>
+      <!-- Buttons -->
+      <div class="mt-6 space-y-3">
+        <template v-if="!authStore.isAuthenticated">
+          <button @click="goToRegister"
+            class="w-full px-5 py-3 text-lg font-semibold bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition">
+            Get Started
+          </button>
+          <button @click="goToLogin"
+            class="w-full px-5 py-3 text-lg font-semibold bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition">
+            Login
+          </button>
+        </template>
+
+        <template v-else>
+          <button @click="goToDashboard"
+            class="w-full px-5 py-3 text-lg font-semibold bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition">
+            Go to Dashboard
+          </button>
+        </template>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.home-container {
-  text-align: center;
-  padding: 2rem;
+/* Prevent scrolling */
+html, body {
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
 }
 
-.buttons {
-  margin-top: 20px;
+/* Glass effect */
+.glass {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
-button {
-  margin: 10px;
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
-  border: none;
-  background-color: #42b883;
-  color: white;
-  border-radius: 5px;
-}
-
-button:hover {
-  background-color: #2c9a6a;
-}
-
-/* Dashboard Button Styling */
-.dashboard-button {
-  background-color: #3498db;
-}
-
-.dashboard-button:hover {
-  background-color: #2980b9;
+/* Soft drop shadow for readability */
+h1, p {
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.3);
 }
 </style>

@@ -35,7 +35,8 @@ const register = async () => {
     });
 
     localStorage.setItem("pending_verification_email", email.value);
-    successMessage.value = "Registration successful! Check your email for a verification code.\nMake sure to check your spam folder!";
+    successMessage.value =
+      "Registration successful! Check your email for a verification code.\nMake sure to check your spam folder!";
 
     setTimeout(() => router.push("/verify-email"), 2000);
   } catch (error: any) {
@@ -47,36 +48,72 @@ const register = async () => {
 </script>
 
 <template>
-  <div class="auth-container">
-    <h2>Register</h2>
-    <form @submit.prevent="register">
-      <div class="input-group">
-        <label for="email">Email</label>
-        <input id="email" type="email" v-model="email" required />
-      </div>
-
-      <div class="input-group">
-        <label for="password">Password</label>
-        <input id="password" type="password" v-model="password" required />
-      </div>
-
-      <!-- Password Hint -->
-      <p class="password-hint" v-if="password">
-        Password must be at least 8 characters, contain uppercase & lowercase letters, a number, and a special character.
-      </p>
-
-      <div class="input-group">
-        <label for="confirmPassword">Confirm Password</label>
-        <input id="confirmPassword" type="password" v-model="confirmPassword" required />
-      </div>
-
-      <button type="submit" :disabled="loading">
-        {{ loading ? "Registering..." : "Register" }}
-      </button>
-    </form>
+  <div class="h-screen flex items-center justify-center px-4 bg-cover bg-center overflow-hidden"
+       style="background-image: url('/background.png'); background-attachment: fixed;">
     
-    <p v-if="successMessage" class="success">{{ successMessage }}</p>
-    <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+    <div class="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg max-w-md w-full">
+      <h1 class="text-center text-2xl font-bold text-white sm:text-3xl">Create an Account</h1>
+      <p class="mt-2 text-center text-gray-200">Sign up to get started.</p>
+
+      <form @submit.prevent="register" class="mt-6 space-y-4">
+        <p v-if="errorMessage" class="text-center text-red-500 text-sm">{{ errorMessage }}</p>
+        <p v-if="successMessage" class="text-center text-green-500 text-sm">{{ successMessage }}</p>
+
+        <div>
+          <label for="email" class="sr-only">Email</label>
+          <input
+            type="email"
+            id="email"
+            v-model="email"
+            placeholder="Enter your email"
+            class="w-full rounded-lg border-gray-300 p-3 text-sm text-white"
+          />
+        </div>
+
+        <div>
+          <label for="password" class="sr-only">Password</label>
+          <input
+            type="password"
+            id="password"
+            v-model="password"
+            placeholder="Enter password"
+            class="w-full rounded-lg border-gray-100 p-3 text-sm text-white"
+          />
+          <p class="text-xs text-gray-300 mt-1">
+            Password must be at least 8 characters long, contain at least one uppercase & lowercase letter and at least one number & special character.
+          </p>
+        </div>
+
+        <div>
+          <label for="confirm-password" class="sr-only">Confirm Password</label>
+          <input
+            type="password"
+            id="confirm-password"
+            v-model="confirmPassword"
+            placeholder="Confirm password"
+            class="w-full rounded-lg border-gray-300 p-3 text-sm text-white"
+          />
+          <p class="text-xs text-gray-300 mt-1">
+            Please enter the same password as above.
+          </p>
+        </div>
+
+        <button
+          type="submit"
+          :disabled="loading"
+          class="w-full rounded-lg bg-green-600 px-5 py-3 text-sm font-medium text-white"
+        >
+          {{ loading ? "Registering..." : "Create an account" }}
+        </button>
+
+        <p class="text-center text-sm text-black-100">
+          Already have an account?
+          <router-link to="/login" class="underline text-blue-400 hover:text-blue-600">
+            Log in
+          </router-link>
+        </p>
+      </form>
+    </div>
   </div>
 </template>
 
@@ -130,22 +167,8 @@ input {
   margin-bottom: 10px;
 }
 
-button {
-  background-color: #42b883;
-  color: white;
-  padding: 10px;
-  font-size: 16px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
 button:disabled {
   background: gray;
-}
-
-button:hover {
-  background-color: #2c9a6a;
 }
 
 .success {

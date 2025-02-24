@@ -5,19 +5,25 @@ import api from "../api";
 
 const email = ref("");
 const verificationCode = ref("");
-const loading = ref(false);
 const successMessage = ref("");
 const errorMessage = ref("");
 const router = useRouter();
 
-// Retrieve stored email from localStorage
+// Separate loading states for each action
+const loadingVerify = ref(false);
+const loadingResend = ref(false);
+
+// Cooldown state for resend button
+const cooldownActive = ref(false);
+const cooldownSeconds = ref(60);
+
 onMounted(() => {
   email.value = localStorage.getItem("pending_verification_email") || "";
 });
 
 // Verify email function
 const verifyEmail = async () => {
-  loading.value = true;
+  loadingVerify.value = true;
   successMessage.value = "";
   errorMessage.value = "";
 
@@ -28,7 +34,7 @@ const verifyEmail = async () => {
     });
 
     successMessage.value = "Email verified successfully! Redirecting...";
-
+    
     // Clear stored email & Redirect to login
     localStorage.removeItem("pending_verification_email");
     setTimeout(() => router.push("/login"), 2000);
@@ -36,138 +42,110 @@ const verifyEmail = async () => {
     console.error("Verification error:", error.response);
     errorMessage.value = error.response?.data?.error || "Verification failed.";
   } finally {
-    loading.value = false;
+    loadingVerify.value = false;
   }
 };
 
 // Resend verification code function
 const resendCode = async () => {
-  loading.value = true;
+  if (cooldownActive.value) return;
+
+  loadingResend.value = true;
   errorMessage.value = "";
   successMessage.value = "";
 
   try {
     await api.post("resend-verification/", { email: email.value });
     successMessage.value = "New verification code sent!";
+    startCooldown();
   } catch (error: any) {
     console.error("Resend error:", error.response);
     if (error.response && error.response.status === 429) {
       errorMessage.value = "Please wait before requesting another verification code.";
+      startCooldown();
     } else {
       errorMessage.value = error.response?.data?.error || "Failed to resend code.";
     }
   } finally {
-    loading.value = false;
+    loadingResend.value = false;
   }
+};
+
+// Start cooldown timer
+const startCooldown = () => {
+  cooldownActive.value = true;
+  cooldownSeconds.value = 60;
+
+  const interval = setInterval(() => {
+    cooldownSeconds.value -= 1;
+    if (cooldownSeconds.value <= 0) {
+      clearInterval(interval);
+      cooldownActive.value = false;
+    }
+  }, 1000);
 };
 </script>
 
 <template>
-  <div class="auth-container">
-    <h2>Email Verification</h2>
-    <p>We have sent a verification code to: <strong>{{ email }}</strong></p>
+  <div class="h-screen flex items-center justify-center px-4 bg-cover bg-center overflow-hidden"
+       style="background-image: url('/background.png'); background-attachment: fixed;">
+    
+    <div class="bg-white/30 backdrop-blur-lg p-8 rounded-lg shadow-lg max-w-md w-full border border-white/20">
+      <h1 class="text-center text-2xl font-bold text-white sm:text-3xl">Email Verification</h1>
+      <p class="mt-2 text-center text-gray-200">
+        We have sent a verification code to: 
+        <strong class="text-white">{{ email }}</strong>
+      </p>
 
-    <form @submit.prevent="verifyEmail">
-      <div class="input-group">
-        <label for="verificationCode">Enter Verification Code</label>
-        <input id="verificationCode" type="text" v-model="verificationCode" required />
-      </div>
+      <form @submit.prevent="verifyEmail" class="mt-6 space-y-4">
+        <p v-if="errorMessage" class="text-center text-red-400 text-sm">{{ errorMessage }}</p>
+        <p v-if="successMessage" class="text-center text-green-400 text-sm">{{ successMessage }}</p>
 
-      <button type="submit" :disabled="loading">
-        {{ loading ? "Verifying..." : "Verify Email" }}
-      </button>
-    </form>
+        <div>
+          <label for="verificationCode" class="sr-only">Enter Verification Code</label>
+          <input
+            id="verificationCode"
+            type="text"
+            v-model="verificationCode"
+            placeholder="Enter Verification Code"
+            class="w-full rounded-lg border-gray-300 p-3 text-sm bg-white/80 text-black"
+            required
+          />
+        </div>
 
-    <button @click="resendCode" :disabled="loading" class="resend-button">
-      Resend Code
-    </button>
+        <button
+          type="submit"
+          :disabled="loadingVerify"
+          class="w-full rounded-lg bg-green-600 px-5 py-3 text-sm font-medium text-white hover:bg-green-700 transition disabled:bg-gray-500"
+        >
+          {{ loadingVerify ? "Verifying..." : "Verify Email" }}
+        </button>
 
-    <p v-if="successMessage" class="success">{{ successMessage }}</p>
-    <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+        <button
+          type="button"
+          @click="resendCode"
+          :disabled="loadingResend || cooldownActive"
+          class="w-full rounded-lg bg-yellow-500 px-5 py-3 text-sm font-medium text-white hover:bg-yellow-600 transition disabled:bg-gray-500"
+        >
+          {{ cooldownActive ? `Wait ${cooldownSeconds}s` : (loadingResend ? "Sending..." : "Resend Code") }}
+        </button>
+      </form>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.auth-container {
-  max-width: 400px;
-  margin: 0 auto;
-  padding: 2rem;
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  text-align: center;
-}
-
-h2 {
-  font-size: 24px;
-  margin-bottom: 10px;
-}
-
-p {
-  font-size: 16px;
-  margin-bottom: 15px;
-}
-
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.input-group {
-  display: flex;
-  flex-direction: column;
-  text-align: left;
-}
-
-label {
-  font-size: 14px;
-  font-weight: bold;
-  margin-bottom: 5px;
-  color: #333;
-}
-
+/* Improved consistency with theme */
 input {
-  padding: 10px;
-  font-size: 16px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
+  outline: none;
+  transition: border 0.3s ease-in-out;
+}
+
+input:focus {
+  border-color: #42b883;
 }
 
 button {
-  background-color: #42b883;
-  color: white;
-  padding: 10px;
-  font-size: 16px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-button:disabled {
-  background: gray;
-}
-
-button:hover {
-  background-color: #2c9a6a;
-}
-
-.resend-button {
-  background-color: #f39c12;
-  margin-top: 10px;
-}
-
-.resend-button:hover{
-  background-color: #cf8308;
-}
-
-.success {
-  color: green;
-  margin-top: 10px;
-}
-
-.error {
-  color: red;
-  margin-top: 10px;
+  transition: background 0.3s ease-in-out;
 }
 </style>
