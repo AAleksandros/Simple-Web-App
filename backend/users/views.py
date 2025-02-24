@@ -3,6 +3,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework import status
 from .models import CustomUser
 from .serializers import UserProfileSerializer
@@ -86,9 +87,11 @@ class VerifyEmailView(APIView):
         except User.DoesNotExist:
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
-### Resend Verification Code (Rate-limited to 60s)
+### Resend Verification Code (Rate-limited)
 class ResendVerificationEmailView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'resend_verification'  # Apply rate limit ONLY to resends
 
     def post(self, request):
         email = request.data.get("email")
@@ -101,6 +104,7 @@ class ResendVerificationEmailView(APIView):
             if not user.can_request_verification_code():
                 return Response({"error": "Please wait before requesting another verification code."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
+            # Generate and send the new code
             verification_code = generate_verification_code()
             user.verification_code = verification_code
             user.verification_code_sent_at = now()
@@ -109,6 +113,7 @@ class ResendVerificationEmailView(APIView):
             send_verification_email(email, verification_code)
 
             return Response({"message": "Verification email resent successfully."}, status=status.HTTP_200_OK)
+
         except User.DoesNotExist:
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
