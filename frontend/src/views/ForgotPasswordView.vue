@@ -118,8 +118,14 @@ const requestPasswordReset = async () => {
           {{ cooldownActive ? `Wait ${cooldownSeconds}s` : (loading ? "Sending..." : "Send Reset Link") }}
         </button>
 
-        <p v-if="successMessage" class="text-green-400 text-sm whitespace-pre-line">{{ successMessage }}</p>
-        <p v-if="errorMessage" class="text-red-800 text-sm">{{ errorMessage }}</p>
+        <!-- Success Message Container -->
+        <div v-if="successMessage" class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded">
+          <p class="text-green-400 text-s whitespace-pre-line">{{ successMessage }}</p>
+        </div>
+        <!-- Error Message Container -->
+        <div v-if="errorMessage" class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded">
+          <p class="text-red-800 text-s">{{ errorMessage }}</p>
+        </div>
       </form>
     </div>
   </div>

@@ -42,7 +42,7 @@ const goToForgotPassword = () => {
 </script>
 
 <template>
-  <div class="h-screen flex items-center justify-center px-4 bg-cover bg-center"
+  <div class="h-screen flex items-center justify-center px-4 bg-cover bg-center" 
        style="background-image: url('/background.png'); background-attachment: fixed;">
     
     <div class="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg max-w-md w-full">
@@ -50,7 +50,10 @@ const goToForgotPassword = () => {
       <p class="mt-2 text-center text-white">Sign in to your account below.</p>
 
       <form @submit.prevent="login" class="mt-6 space-y-4">
-        <p v-if="errorMessage" class="text-center text-red-500 text-sm">{{ errorMessage }}</p>
+        <!-- Error Message Container -->
+        <div v-if="errorMessage" class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded">
+          <p class="text-red-500 text-s">{{ errorMessage }}</p>
+        </div>
 
         <div>
           <label for="email" class="sr-only">Email</label>

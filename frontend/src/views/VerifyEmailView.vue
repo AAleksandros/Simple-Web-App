@@ -98,8 +98,14 @@ const startCooldown = () => {
       </p>
 
       <form @submit.prevent="verifyEmail" class="mt-6 space-y-4">
-        <p v-if="errorMessage" class="text-center text-red-400 text-sm">{{ errorMessage }}</p>
-        <p v-if="successMessage" class="text-center text-green-400 text-sm">{{ successMessage }}</p>
+        <!-- Error Message Container -->
+        <div v-if="errorMessage" class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded">
+          <p class="text-red-500 text-s">{{ errorMessage }}</p>
+        </div>
+        <!-- Success Message Container -->
+        <div v-if="successMessage" class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded">
+          <p class="text-green-400 text-s">{{ successMessage }}</p>
+        </div>
 
         <div>
           <label for="verificationCode" class="sr-only">Enter Verification Code</label>
@@ -116,7 +122,7 @@ const startCooldown = () => {
         <button
           type="submit"
           :disabled="loadingVerify"
-          class="w-full rounded-lg bg-green-600 px-5 py-3 text-sm font-medium text-white hover:bg-green-700 transition disabled:bg-gray-500"
+          class="w-full rounded-lg bg-green-600 px-5 py-3 text-s font-medium text-white hover:bg-green-700 transition disabled:bg-gray-500"
         >
           {{ loadingVerify ? "Verifying..." : "Verify Email" }}
         </button>

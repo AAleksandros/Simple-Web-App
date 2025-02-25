@@ -55,10 +55,15 @@ const register = async () => {
       <h1 class="text-center text-2xl font-bold text-white sm:text-3xl">Create an Account</h1>
       <p class="mt-2 text-center text-gray-200">Sign up to get started.</p>
 
-      <form @submit.prevent="register" class="mt-6 space-y-4">
-        <p v-if="errorMessage" class="text-center text-red-500 text-sm">{{ errorMessage }}</p>
-        <p v-if="successMessage" class="text-center text-green-500 text-sm">{{ successMessage }}</p>
+      <!-- Message Containers -->
+      <div v-if="errorMessage" class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded">
+        <p class="text-red-500 text-s">{{ errorMessage }}</p>
+      </div>
+      <div v-if="successMessage" class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded">
+        <p class="text-green-400 text-s">{{ successMessage }}</p>
+      </div>
 
+      <form @submit.prevent="register" class="mt-6 space-y-4">
         <div>
           <label for="email" class="sr-only">Email</label>
           <input
@@ -80,9 +85,7 @@ const register = async () => {
             class="w-full rounded-lg border-gray-100 p-3 text-sm text-white"
           />
           <p class="text-gray-300 text-s mt-1">
-            Password must be at least <strong>8 characters</strong> long, 
-            contain <strong>uppercase</strong> & <strong>lowercase</strong> letters, 
-            a <strong>number</strong>, and a <strong>special character</strong>.
+            Password must be at least <strong>8 characters</strong> long, contain <strong>uppercase</strong> & <strong>lowercase</strong> letters, a <strong>number</strong>, and a <strong>special character</strong>.
           </p>
         </div>
 
@@ -95,7 +98,7 @@ const register = async () => {
             placeholder="Confirm password"
             class="w-full rounded-lg border-gray-300 p-3 text-sm text-white"
           />
-          <p class="text-s text-gray-300 mt-1">
+          <p class="text-gray-300 text-s mt-1">
             Please enter the same password as above.
           </p>
         </div>

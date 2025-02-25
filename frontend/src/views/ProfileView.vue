@@ -212,8 +212,24 @@ const saveProfile = async () => {
 };
 
 const cancelEdit = () => {
+  // Reset the main profile data
   profile.value = { ...originalProfile.value };
   isEditing.value = false;
+
+  // Recalculate phone number parts from the reset profile.phone_number
+  const phoneParts = profile.value.phone_number.match(/^(\+\d{1,4})\s?(.*)$/);
+  if (phoneParts) {
+    phoneNumberSelectedCountry.value =
+      countryList.value.find(c => c.phoneCode === phoneParts[1]) || countryList.value[0];
+    phoneNumberWithoutCode.value = phoneParts[2] || "";
+  } else {
+    phoneNumberSelectedCountry.value = countryList.value[0];
+    phoneNumberWithoutCode.value = "";
+  }
+
+  // Reset the profile country dropdown
+  const foundCountry = countryList.value.find(c => c.name === profile.value.country);
+  profileSelectedCountry.value = foundCountry || countryList.value[0];
 };
 
 onMounted(fetchProfile);
@@ -227,13 +243,25 @@ onMounted(fetchProfile);
       <h1 class="text-center text-2xl font-bold text-white sm:text-3xl">User Profile</h1>
 
       <!-- Prompt for first-time users -->
-      <p v-if="isFirstTimeUser" class="text-center text-yellow-400 text-s mt-2">
-        Please complete your profile information before continuing.
-      </p>
+      <div v-if="isFirstTimeUser" class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded">
+        <p class="text-yellow-400 text-s">
+          Please complete your profile information before continuing.
+        </p>
+      </div>
 
-      <!-- Success and error messages -->
-      <p v-if="successMessage" class="text-center text-green-400 text-s mt-2">{{ successMessage }}</p>
-      <p v-if="errorMessage" class="text-center text-red-400 text-s mt-2">{{ errorMessage }}</p>
+      <!-- Success Message -->
+      <div v-if="successMessage" class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded">
+        <p class="text-green-400 text-s">
+          {{ successMessage }}
+        </p>
+      </div>
+
+      <!-- Error Message -->
+      <div v-if="errorMessage" class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded">
+        <p class="text-red-500 text-s">
+          {{ errorMessage }}
+        </p>
+      </div>
 
       <form @submit.prevent="saveProfile" class="mt-6 space-y-4">
         <!-- First Name -->
