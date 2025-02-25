@@ -81,7 +81,7 @@ const goToForgotPassword = () => {
           Sign in
         </button>
 
-        <p class="text-center text-sm text-black-100">
+        <p class="text-center text-s text-black">
           No account?
           <router-link to="/register" class="underline text-blue-400 hover:text-blue-600">
             Sign up

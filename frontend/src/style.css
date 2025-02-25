@@ -95,3 +95,12 @@ input:focus {
   border-color: #ffffff;
   box-shadow: 0 0 0 2px #ffffff;
 }
+
+/* Removes the default focus outline on pressed buttons on mobile devices */
+@media (hover: none) and (pointer: coarse) {
+  button:focus,
+  button:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+}

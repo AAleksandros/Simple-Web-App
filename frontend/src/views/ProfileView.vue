@@ -227,13 +227,13 @@ onMounted(fetchProfile);
       <h1 class="text-center text-2xl font-bold text-white sm:text-3xl">User Profile</h1>
 
       <!-- Prompt for first-time users -->
-      <p v-if="isFirstTimeUser" class="text-center text-yellow-400 text-sm mt-2">
+      <p v-if="isFirstTimeUser" class="text-center text-yellow-400 text-s mt-2">
         Please complete your profile information before continuing.
       </p>
 
       <!-- Success and error messages -->
-      <p v-if="successMessage" class="text-center text-green-400 text-sm mt-2">{{ successMessage }}</p>
-      <p v-if="errorMessage" class="text-center text-red-400 text-sm mt-2">{{ errorMessage }}</p>
+      <p v-if="successMessage" class="text-center text-green-400 text-s mt-2">{{ successMessage }}</p>
+      <p v-if="errorMessage" class="text-center text-red-400 text-s mt-2">{{ errorMessage }}</p>
 
       <form @submit.prevent="saveProfile" class="mt-6 space-y-4">
         <!-- First Name -->

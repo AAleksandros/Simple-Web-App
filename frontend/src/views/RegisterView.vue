@@ -79,8 +79,10 @@ const register = async () => {
             placeholder="Enter password"
             class="w-full rounded-lg border-gray-100 p-3 text-sm text-white"
           />
-          <p class="text-xs text-gray-300 mt-1">
-            Password must be at least 8 characters long, contain at least one uppercase & lowercase letter and at least one number & special character.
+          <p class="text-gray-300 text-s mt-1">
+            Password must be at least <strong>8 characters</strong> long, 
+            contain <strong>uppercase</strong> & <strong>lowercase</strong> letters, 
+            a <strong>number</strong>, and a <strong>special character</strong>.
           </p>
         </div>
 
@@ -93,7 +95,7 @@ const register = async () => {
             placeholder="Confirm password"
             class="w-full rounded-lg border-gray-300 p-3 text-sm text-white"
           />
-          <p class="text-xs text-gray-300 mt-1">
+          <p class="text-s text-gray-300 mt-1">
             Please enter the same password as above.
           </p>
         </div>
@@ -106,7 +108,7 @@ const register = async () => {
           {{ loading ? "Registering..." : "Create an account" }}
         </button>
 
-        <p class="text-center text-sm text-black-100">
+        <p class="text-center text-s text-black">
           Already have an account?
           <router-link to="/login" class="underline text-blue-400 hover:text-blue-600">
             Log in
