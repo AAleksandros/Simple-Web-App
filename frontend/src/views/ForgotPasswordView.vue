@@ -9,7 +9,10 @@ const errorMessage = ref("");
 const cooldownActive = ref(false);
 const cooldownSeconds = ref(0);
 
-// Retrieve & Resume Cooldown from LocalStorage
+const RATE_LIMIT_MS = 60 * 1000; // 60 seconds per email
+const FAKE_WAIT_MS = 2000; // 2 seconds delay
+
+// Retrieve & resume cooldown from localStorage
 onMounted(() => {
   const lastRequestTime = localStorage.getItem("last_reset_request");
   const storedCooldown = localStorage.getItem("reset_cooldown_seconds");
@@ -48,36 +51,47 @@ const requestPasswordReset = async () => {
   try {
     await api.post("forgot-password/", { email: email.value });
 
-    // Default cooldown of 5 minutes (300 seconds) if no rate limit provided
-    cooldownSeconds.value = 300;
+    // Set cooldown to 60 seconds (default)
+    cooldownSeconds.value = 60;
     localStorage.setItem("last_reset_request", Date.now().toString());
     localStorage.setItem("reset_cooldown_seconds", cooldownSeconds.value.toString());
 
-    successMessage.value = "If this email exists, a reset link has been sent. \nMake sure to check your spam folder!";
+    successMessage.value = "If this email exists, a reset link has been sent.\nMake sure to check your spam folder!";
     startCooldown();
+    loading.value = false;
   } catch (error: any) {
     if (error.response?.status === 429) {
-      // Read actual cooldown from 'Retry-After' header (if available)
       const retryAfter = Number(error.response.headers["retry-after"]);
-      cooldownSeconds.value = retryAfter > 0 ? retryAfter : 300;
+      cooldownSeconds.value = retryAfter > 0 ? retryAfter : 60;
 
       localStorage.setItem("last_reset_request", Date.now().toString());
       localStorage.setItem("reset_cooldown_seconds", cooldownSeconds.value.toString());
 
       errorMessage.value = "Please wait before requesting another reset link.";
       startCooldown();
+      loading.value = false;
+    } else if (error.response?.status === 404) {
+      // Delay before showing success message for 404 to hide email existence
+      setTimeout(() => {
+        successMessage.value = "If this email exists, a reset link has been sent.\nMake sure to check your spam folder!";
+        cooldownSeconds.value = 60;
+        localStorage.setItem("last_reset_request", Date.now().toString());
+        localStorage.setItem("reset_cooldown_seconds", cooldownSeconds.value.toString());
+        startCooldown();
+        loading.value = false;
+      }, FAKE_WAIT_MS);
+      // Do not set loading.value to false immediately
     } else {
       errorMessage.value = error.response?.data?.error || "An unexpected error occurred.";
+      loading.value = false;
     }
-  } finally {
-    loading.value = false;
   }
 };
 </script>
 
 <template>
   <div class="flex items-center justify-center min-h-screen bg-cover bg-center" 
-    style="background-image: url('/background.png');">
+       style="background-image: url('/background.png');">
     
     <div class="bg-white/30 backdrop-blur-md shadow-lg rounded-lg p-8 max-w-md w-full text-center border border-white/20">
       <h2 class="text-3xl font-bold text-white drop-shadow-lg">Forgot Password?</h2>
