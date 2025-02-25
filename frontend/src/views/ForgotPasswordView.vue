@@ -8,9 +8,7 @@ const successMessage = ref("");
 const errorMessage = ref("");
 const cooldownActive = ref(false);
 const cooldownSeconds = ref(0);
-
-const RATE_LIMIT_MS = 60 * 1000; // 60 seconds per email
-const FAKE_WAIT_MS = 2000; // 2 seconds delay
+const FAKE_WAIT_MS = 2000;
 
 // Retrieve & resume cooldown from localStorage
 onMounted(() => {
@@ -49,10 +47,10 @@ const requestPasswordReset = async () => {
   errorMessage.value = "";
 
   try {
-    await api.post("forgot-password/", { email: email.value });
-
-    // Set cooldown to 60 seconds (default)
-    cooldownSeconds.value = 60;
+    const response = await api.post("forgot-password/", { email: email.value });
+    // Use the API value from the retry-after header if available; fallback to 60
+    const retryAfter = Number(response.headers["retry-after"]) || 60;
+    cooldownSeconds.value = retryAfter;
     localStorage.setItem("last_reset_request", Date.now().toString());
     localStorage.setItem("reset_cooldown_seconds", cooldownSeconds.value.toString());
 
@@ -61,36 +59,34 @@ const requestPasswordReset = async () => {
     loading.value = false;
   } catch (error: any) {
     if (error.response?.status === 429) {
-      const retryAfter = Number(error.response.headers["retry-after"]);
-      cooldownSeconds.value = retryAfter > 0 ? retryAfter : 60;
-
+      const retryAfter = Number(error.response.headers["retry-after"]) || 60;
+      cooldownSeconds.value = retryAfter;
       localStorage.setItem("last_reset_request", Date.now().toString());
       localStorage.setItem("reset_cooldown_seconds", cooldownSeconds.value.toString());
-
       errorMessage.value = "Please wait before requesting another reset link.";
       startCooldown();
       loading.value = false;
     } else if (error.response?.status === 404) {
-      // Delay before showing success message for 404 to hide email existence
       setTimeout(() => {
+        const retryAfter = Number(error.response?.headers["retry-after"]) || 60;
         successMessage.value = "If this email exists, a reset link has been sent.\nMake sure to check your spam folder!";
-        cooldownSeconds.value = 60;
+        cooldownSeconds.value = retryAfter;
         localStorage.setItem("last_reset_request", Date.now().toString());
         localStorage.setItem("reset_cooldown_seconds", cooldownSeconds.value.toString());
         startCooldown();
         loading.value = false;
       }, FAKE_WAIT_MS);
-      // Do not set loading.value to false immediately
     } else {
       errorMessage.value = error.response?.data?.error || "An unexpected error occurred.";
       loading.value = false;
     }
   }
 };
+
 </script>
 
 <template>
-  <div class="flex items-center justify-center min-h-screen bg-cover bg-center" 
+  <div class="pt-30 pb-30 flex items-center justify-center min-h-screen bg-cover bg-center" 
        style="background-image: url('/background.png');">
     
     <div class="bg-white/30 backdrop-blur-md shadow-lg rounded-lg p-8 max-w-md w-full text-center border border-white/20">
@@ -118,13 +114,11 @@ const requestPasswordReset = async () => {
           {{ cooldownActive ? `Wait ${cooldownSeconds}s` : (loading ? "Sending..." : "Send Reset Link") }}
         </button>
 
-        <!-- Success Message Container -->
         <div v-if="successMessage" class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded">
           <p class="text-green-400 text-s whitespace-pre-line">{{ successMessage }}</p>
         </div>
-        <!-- Error Message Container -->
         <div v-if="errorMessage" class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded">
-          <p class="text-red-800 text-s">{{ errorMessage }}</p>
+          <p class="text-red-500 text-s">{{ errorMessage }}</p>
         </div>
       </form>
     </div>

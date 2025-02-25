@@ -21,16 +21,38 @@ const login = async () => {
       password: password.value,
     });
 
+    console.log("API Login Response:", response.data);
+
     if (response.data.access && response.data.user) {
+      if (!response.data.user.is_active) {
+        console.log("Redirecting unverified user to /verify-email...");
+        localStorage.setItem("pending_verification_email", email.value);
+        localStorage.setItem("email_last_sent", Date.now().toString());
+        return router.push("/verify-email");
+      }
+
       authStore.login(response.data.access, response.data.user);
+      console.log("Redirecting to dashboard...");
       router.push(response.data.user.is_staff ? "/admin-dashboard" : "/dashboard");
     } else {
       throw new Error("Invalid server response.");
     }
   } catch (err) {
-    if (axios.isAxiosError(err)) {
-      errorMessage.value = err.response?.data?.error || "Invalid email or password.";
+    if (axios.isAxiosError(err) && err.response) {
+      const apiError = err.response.data;
+
+      // Handle unverified email case without logging an error
+      if (apiError?.error?.includes("Email not verified")) {
+        console.log("Redirecting to /verify-email after failed login due to unverified email...");
+        localStorage.setItem("pending_verification_email", email.value);
+        localStorage.setItem("email_last_sent", Date.now().toString());
+        return router.push("/verify-email");
+      }
+
+      console.error("Unexpected Login Error:", err);
+      errorMessage.value = apiError?.error || "Invalid email or password.";
     } else {
+      console.error("Unexpected Login Exception:", err);
       errorMessage.value = "An unexpected error occurred.";
     }
   }
@@ -42,7 +64,7 @@ const goToForgotPassword = () => {
 </script>
 
 <template>
-  <div class="h-screen flex items-center justify-center px-4 bg-cover bg-center" 
+  <div class="pt-30 pb-30 flex items-center justify-center px-4 bg-cover bg-center overflow-y-auto" 
        style="background-image: url('/background.png'); background-attachment: fixed;">
     
     <div class="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg max-w-md w-full">

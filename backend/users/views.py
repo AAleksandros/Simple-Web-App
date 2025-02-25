@@ -11,7 +11,7 @@ from django.contrib.auth import get_user_model
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from users.utils.email_service import send_verification_email, send_password_reset_email, generate_verification_code
-from django.utils.timezone import now
+from django.utils.timezone import now, timedelta
 from datetime import timedelta
 import random
 import uuid
@@ -50,12 +50,35 @@ class RegisterView(APIView):
         if email.split("@")[0].lower() in password.lower():
             return Response({"error": "Password is too similar to the email."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if User.objects.filter(email=email).exists():
+        user = User.objects.filter(email=email).first()
+
+        EMAIL_VERIFICATION_COOLDOWN = timedelta(seconds=60)
+
+        if user and not user.is_active:
+            last_sent = user.verification_code_sent_at
+            if last_sent and now() - last_sent < EMAIL_VERIFICATION_COOLDOWN:
+                return Response(
+                    {"error": "User already exists but is not verified. Please wait before requesting another verification code."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # If cooldown has passed, generate and send a new code
+            verification_code = generate_verification_code()
+            user.verification_code = verification_code
+            user.verification_code_sent_at = now()
+            user.save()
+
+            send_verification_email(email, verification_code)
+
+            return Response(
+                {"error": "User already exists but is not verified. A new verification code has been sent to your email."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if user:
             return Response({"error": "Email is already registered."}, status=status.HTTP_400_BAD_REQUEST)
 
         verification_code = generate_verification_code()
-
-        # Create user but set as inactive until verified
         user = User.objects.create_user(email=email, password=password)
         user.is_active = False
         user.verification_code = verification_code
@@ -119,15 +142,18 @@ class ResendVerificationEmailView(APIView):
 ### Forgot Password Request
 class ForgotPasswordView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'forgot_password'
 
     def post(self, request):
         email = request.data.get("email")
-
         try:
             user = User.objects.get(email=email)
-
             if not user.can_request_password_reset():
-                return Response({"error": "Please wait before requesting another password reset."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+                return Response(
+                    {"error": "Please wait before requesting another password reset."},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS
+                )
 
             # Invalidate the old reset token by generating a new one
             user.password_reset_token = uuid.uuid4()  
@@ -198,24 +224,46 @@ class ValidateResetTokenView(APIView):
 
 ### User Login
 class CustomTokenObtainPairView(TokenObtainPairView):
-    serializer_class = CustomTokenObtainPairSerializer
-
     def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
+        email = request.data.get("email")
 
         try:
-            user = User.objects.get(email=request.data["email"])
-            if not user.is_active:
-                return Response({"error": "Email not verified. Please check your email."}, status=status.HTTP_400_BAD_REQUEST)
-
-            response.data["user"] = {
-                "id": user.id,
-                "email": user.email,
-                "is_active": user.is_active,
-                "is_staff": user.is_staff
-            }
+            user = User.objects.get(email=email)
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if the user is not active
+        if not user.is_active:
+            EMAIL_VERIFICATION_COOLDOWN = timedelta(seconds=60)
+            last_sent = user.verification_code_sent_at
+
+            if last_sent and now() - last_sent < EMAIL_VERIFICATION_COOLDOWN:
+                return Response(
+                    {"error": "Email not verified. Please check your email."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            verification_code = generate_verification_code()
+            user.verification_code = verification_code
+            user.verification_code_sent_at = now()
+            user.save()
+
+            send_verification_email(email, verification_code)
+
+            return Response(
+                {"error": "Email not verified. A new verification code has been sent."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # If user is verified, proceed with normal login
+        response = super().post(request, *args, **kwargs)
+
+        response.data["user"] = {
+            "id": user.id,
+            "email": user.email,
+            "is_active": user.is_active,
+            "is_staff": user.is_staff
+        }
 
         return response
 
