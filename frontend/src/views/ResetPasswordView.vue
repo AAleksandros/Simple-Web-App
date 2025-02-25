@@ -42,7 +42,6 @@ onMounted(async () => {
 
 // Check password strength and set error message if requirements not met
 const checkPasswordStrength = () => {
-  // If the field is empty, don't show error yet.
   if (!newPassword.value) {
     isPasswordValid.value = false;
     errorMessage.value = "";
@@ -60,7 +59,6 @@ const checkPasswordStrength = () => {
   if (!isPasswordValid.value) {
     errorMessage.value = "Ensure the new password fulfills the minimum requirements.";
   } else {
-    // Clear the error if the password becomes valid
     if (errorMessage.value.startsWith("Password must")) {
       errorMessage.value = "";
     }
@@ -73,7 +71,6 @@ const checkPasswordsMatch = () => {
   if (!passwordsMatch.value) {
     errorMessage.value = "Passwords do not match.";
   } else {
-    // If password is valid and they match, clear error if it was set for mismatch
     if (errorMessage.value === "Passwords do not match.") {
       errorMessage.value = "";
     }
@@ -92,8 +89,6 @@ const resetPassword = async () => {
   }
 
   if (!isPasswordValid.value) {
-    // This should already be set by checkPasswordStrength,
-    // but we ensure here that the error is shown.
     errorMessage.value = "Password does not meet the requirements.";
     return;
   }
@@ -122,7 +117,7 @@ const resetPassword = async () => {
 
 <template>
   <div
-    class="h-screen flex items-center justify-center px-4 bg-cover bg-center overflow-hidden"
+    class="pt-30 pb-30 flex items-center justify-center px-4 bg-cover bg-center overflow-y-auto"
     style="background-image: url('/background.png'); background-attachment: fixed;"
   >
     <div
@@ -140,7 +135,6 @@ const resetPassword = async () => {
         Enter your new password below.
       </p>
 
-      <!-- Show Loading while checking the token -->
       <p
         v-if="checkingToken"
         class="text-center text-gray-300 text-s mt-4"
@@ -170,15 +164,12 @@ const resetPassword = async () => {
         @submit.prevent="resetPassword"
         class="mt-6 space-y-4"
       >
-        <!-- Error Message Container -->
         <div
           v-if="errorMessage"
           class="w-full text-center bg-black/60 backdrop-blur-md px-4 py-2 rounded"
         >
           <p class="text-red-400 text-s">{{ errorMessage }}</p>
         </div>
-
-        <!-- Success Message Container -->
         <div
           v-if="successMessage"
           class="w-full text-center bg-black/60 backdrop-blur-md px-4 py-2 rounded"
@@ -226,9 +217,6 @@ const resetPassword = async () => {
             required
           />
         </div>
-
-        <!-- Removed the small inline "Passwords do not match." text here -->
-
         <button
           type="submit"
           :disabled="loading || !passwordsMatch || !isPasswordValid"
@@ -242,7 +230,6 @@ const resetPassword = async () => {
 </template>
 
 <style scoped>
-/* Improved consistency with theme */
 input {
   outline: none;
   transition: border 0.3s ease-in-out;

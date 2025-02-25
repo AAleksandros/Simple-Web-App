@@ -21,7 +21,7 @@ const goToProfile = () => router.push("/profile");
 </script>
 
 <template>
-  <div class="flex items-center justify-center h-screen px-4 bg-cover bg-center overflow-hidden"
+  <div class="pt-30 pb-30 flex items-center justify-center h-screen px-4 bg-cover bg-center overflow-y-auto"
        style="background-image: url('/background.png'); background-attachment: fixed;">
     
     <div class="bg-white/30 backdrop-blur-lg p-8 rounded-lg shadow-lg max-w-lg w-full border border-white/20 text-center">
@@ -44,7 +44,6 @@ const goToProfile = () => router.push("/profile");
         Go to your <strong>Profile</strong> to view and edit your information.
       </p>
 
-      <!-- Button Container -->
       <div class="mt-6 flex justify-center gap-4">
         <!-- Admin Panel Button -->
         <button v-if="isAdmin" @click="goToAdminPanel"
@@ -69,12 +68,10 @@ const goToProfile = () => router.push("/profile");
 </template>
 
 <style scoped>
-/* Smooth transition for buttons */
 button {
   transition: background 0.3s ease-in-out;
 }
 
-/* Adds a shadow for readability */
 h1 {
   text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
 }

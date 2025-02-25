@@ -40,7 +40,7 @@ const originalProfile = ref({ ...profile.value });
 const phoneNumberSelectedCountry = ref(countryList.value[0]);
 const phoneNumberWithoutCode = ref("");
 
-// For profile's country field (separate dropdown)
+// For profile's country field
 const profileSelectedCountry = ref(countryList.value[0]);
 
 const updatePhoneNumber = () => {
@@ -51,28 +51,23 @@ const updatePhoneNumber = () => {
   }
 };
 
-// Restrict phone input to digits, dashes, spaces
 const handlePhoneNumberInput = () => {
   phoneNumberWithoutCode.value = phoneNumberWithoutCode.value.replace(/[^0-9-\s]/g, "");
   errorMessage.value = "";
 };
 
-// Sanitize name: allow only letters, spaces, dashes
 const sanitizeName = (value: string) => {
   return value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s-]/g, "");
 };
 
-// Sanitize city: allow only letters, spaces, dashes
 const sanitizeCity = (value: string) => {
   return value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s-]/g, "");
 };
 
-// Sanitize address: allow only letters, numbers, spaces, commas, periods, dashes
 const sanitizeAddress = () => {
   profile.value.address = profile.value.address.replace(/[^a-zA-Z0-9\s,.-]/g, "");
 };
 
-// Validate name fields
 const validateName = (name: string) => {
   const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s-]+$/;
   if (!nameRegex.test(name)) {
@@ -82,7 +77,6 @@ const validateName = (name: string) => {
   return true;
 };
 
-// Validate city field
 const validateCity = () => {
   const cityRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s-]+$/;
   if (!cityRegex.test(profile.value.city)) {
@@ -143,11 +137,10 @@ const fetchProfile = async () => {
       phoneNumberWithoutCode.value = "";
     }
 
-    // Set profile country based on stored value (if any)
     const foundCountry = countryList.value.find(c => c.name === profile.value.country);
     profileSelectedCountry.value = foundCountry || countryList.value[0];
 
-    // Determine if this is a first-time user (fields are empty except email)
+    // Determine if this is a first-time user
     isFirstTimeUser.value = !profile.value.first_name.trim() &&
                             !profile.value.last_name.trim() &&
                             !profile.value.phone_number.trim() &&
@@ -162,7 +155,6 @@ const fetchProfile = async () => {
 };
 
 const saveProfile = async () => {
-  // Trim all fields
   Object.keys(profile.value).forEach((key) => {
     if (typeof profile.value[key] === "string") {
       profile.value[key] = profile.value[key].trim();
@@ -199,7 +191,6 @@ const saveProfile = async () => {
     await api.put("profile/", profile.value);
     successMessage.value = "Profile updated successfully!";
     isEditing.value = false;
-    // Remove the first-time user prompt after saving
     isFirstTimeUser.value = false;
     localStorage.setItem("profile", JSON.stringify(profile.value));
 
@@ -216,7 +207,6 @@ const cancelEdit = () => {
   profile.value = { ...originalProfile.value };
   isEditing.value = false;
 
-  // Recalculate phone number parts from the reset profile.phone_number
   const phoneParts = profile.value.phone_number.match(/^(\+\d{1,4})\s?(.*)$/);
   if (phoneParts) {
     phoneNumberSelectedCountry.value =
@@ -236,7 +226,7 @@ onMounted(fetchProfile);
 </script>
 
 <template>
-  <div class="h-screen flex items-center justify-center px-4 bg-cover bg-center overflow-hidden"
+  <div class="pt-30 pb-30 flex items-center justify-center px-4 bg-cover bg-center overflow-y-auto"
        style="background-image: url('/background.png'); background-attachment: fixed;">
     
     <div class="bg-white/30 backdrop-blur-lg p-8 rounded-lg shadow-lg max-w-md w-full border border-white/20">
@@ -294,7 +284,7 @@ onMounted(fetchProfile);
           />
         </div>
 
-        <!-- Email (disabled) -->
+        <!-- Email -->
         <div>
           <label for="email" class="sr-only">Email</label>
           <input
@@ -446,7 +436,6 @@ input:focus {
   color: white;
 }
 
-/* Buttons */
 .edit-btn {
   background: #007bff;
   padding: 10px;
@@ -468,12 +457,10 @@ input:focus {
   font-weight: bold;
 }
 
-/* Button Hover Effects */
 button:hover {
   opacity: 0.8;
 }
 
-/* Message Styles */
 .text-yellow-400 {
   font-size: 0.9rem;
   text-align: center;

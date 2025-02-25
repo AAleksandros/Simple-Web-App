@@ -192,7 +192,7 @@ const cancelAction = () => {
 
 <template>
   <div 
-    class="h-screen flex items-center justify-center px-4 bg-cover bg-center"
+    class="pt-30 pb-30 flex items-center justify-center px-4 bg-cover bg-center overflow-y-auto"
     style="background-image: url('/background.png'); background-attachment: fixed;"
   >
     <div class="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg w-full max-w-4xl">

@@ -19,7 +19,7 @@ const goToDashboard = () => {
 </script>
 
 <template>
-  <div class="h-screen w-screen flex items-center justify-center bg-cover bg-center overflow-hidden"
+  <div class="h-screen w-screen flex items-center justify-center bg-cover bg-center overflow-y-auto"
     style="background-image: url('/background.png');">
     
     <!-- Glass Card Container -->
@@ -56,7 +56,6 @@ const goToDashboard = () => {
 </template>
 
 <style scoped>
-/* Prevent scrolling */
 html, body {
   height: 100%;
   overflow: hidden;
