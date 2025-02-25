@@ -27,14 +27,14 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """Create user with a verification code and inactive status."""
-        validated_data.pop("confirm_password")  # Remove confirm_password field
+        validated_data.pop("confirm_password")
         verification_code = generate_verification_code()
 
         user = User.objects.create_user(
             email=validated_data["email"],
             password=validated_data["password"],
         )
-        user.is_active = False  # Require email verification
+        user.is_active = False
         user.verification_code = verification_code
         user.save()
         
@@ -59,7 +59,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         except User.DoesNotExist:
             raise serializers.ValidationError("Invalid email or password.")
 
-        # Manually set the username field for JWT compatibility
         attrs["username"] = user.email  
         return super().validate(attrs)
     

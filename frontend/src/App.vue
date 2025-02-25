@@ -5,7 +5,7 @@ import { RouterView, RouterLink } from "vue-router";
 
 const route = useRoute();
 
-// Define paths where the navbar should be hidden
+// Paths where navbar is hidden
 const hideNavbarPaths = ["/login", "/register", "/", "/forgot-password", "/reset-password", "/verify-email"];
 </script>
 
@@ -24,8 +24,6 @@ const hideNavbarPaths = ["/login", "/register", "/", "/forgot-password", "/reset
     >
       Home
     </RouterLink>
-
-    <!-- Render the page content -->
     <RouterView />
   </div>
 </template>

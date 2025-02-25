@@ -53,7 +53,6 @@ class RegisterView(APIView):
         if User.objects.filter(email=email).exists():
             return Response({"error": "Email is already registered."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Generate verification code
         verification_code = generate_verification_code()
 
         # Create user but set as inactive until verified
@@ -63,7 +62,6 @@ class RegisterView(APIView):
         user.verification_code_sent_at = now()
         user.save()
 
-        # Send email
         send_verification_email(email, verification_code)
 
         return Response({"message": "User registered successfully. Check your email for the verification code."}, status=status.HTTP_201_CREATED)
@@ -88,11 +86,11 @@ class VerifyEmailView(APIView):
         except User.DoesNotExist:
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
-### Resend Verification Code (Rate-limited)
+### Resend Verification Code
 class ResendVerificationEmailView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]
-    throttle_scope = 'resend_verification'  # Apply rate limit ONLY to resends
+    throttle_scope = 'resend_verification'
 
     def post(self, request):
         email = request.data.get("email")
@@ -118,7 +116,7 @@ class ResendVerificationEmailView(APIView):
         except User.DoesNotExist:
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
-### Forgot Password Request (Rate-limited to 5 min)
+### Forgot Password Request
 class ForgotPasswordView(APIView):
     permission_classes = [AllowAny]
 

@@ -7,15 +7,34 @@ const authStore = useAuthStore();
 const users = ref<{ id: number; email: string; is_active: boolean; is_staff: boolean }[]>([]);
 const errorMessage = ref("");
 const successMessage = ref("");
+const currentPage = ref(1);
+const itemsPerPage = 10;
+const searchQuery = ref("");
+const sortColumn = ref<"id" | "email">("id");
+const sortDirection = ref<"asc" | "desc">("asc");
 
 // Modal state
 const showModal = ref(false);
 const modalAction = ref<"delete" | "update" | null>(null);
 const selectedUserId = ref<number | null>(null);
 
-// For update, we use a reactive Map to store the temporary status per user
+// For status update, we use a reactive Map to store the temporary status per user
 const tempUserStatus = reactive(new Map<number, { is_active: boolean; is_staff: boolean }>());
 const modalOriginalStatus = ref<{ is_active: boolean; is_staff: boolean } | null>(null);
+
+const showSuccess = (msg: string) => {
+  successMessage.value = msg;
+  setTimeout(() => {
+    successMessage.value = "";
+  }, 5000);
+};
+
+const showError = (msg: string) => {
+  errorMessage.value = msg;
+  setTimeout(() => {
+    errorMessage.value = "";
+  }, 5000);
+};
 
 const fetchUsers = async () => {
   try {
@@ -28,17 +47,65 @@ const fetchUsers = async () => {
       tempUserStatus.set(user.id, { is_active: user.is_active, is_staff: user.is_staff });
     });
   } catch (error: any) {
-    errorMessage.value = "Failed to fetch users.";
+    showError("Failed to fetch users.");
   }
 };
 
 onMounted(fetchUsers);
 
-/**
- * Opens the modal for an action.
- * For "update", record the original status.
- */
+//  Search & Sort 
+const filteredUsers = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase();
+  if (!query) return users.value;
+  return users.value.filter(user => {
+    return (
+      user.email.toLowerCase().includes(query) ||
+      user.id.toString() === query
+    );
+  });
+});
+
+const sortedUsers = computed(() => {
+  const sorted = [...filteredUsers.value];
+  sorted.sort((a, b) => {
+    // Always keep admin users first
+    if (a.is_staff && !b.is_staff) return -1;
+    if (!a.is_staff && b.is_staff) return 1;
+    if (sortColumn.value === "id") {
+      return sortDirection.value === "asc" ? a.id - b.id : b.id - a.id;
+    } else {
+      return sortDirection.value === "asc"
+        ? a.email.localeCompare(b.email)
+        : b.email.localeCompare(a.email);
+    }
+  });
+  return sorted;
+});
+
+const totalPages = computed(() => {
+  return Math.ceil(sortedUsers.value.length / itemsPerPage);
+});
+
+const paginatedUsers = computed(() => {
+  const startIndex = (currentPage.value - 1) * itemsPerPage;
+  return sortedUsers.value.slice(startIndex, startIndex + itemsPerPage);
+});
+
+// Sorting Handler
+function sortBy(column: "id" | "email") {
+  if (sortColumn.value === column) {
+    sortDirection.value = sortDirection.value === "asc" ? "desc" : "asc";
+  } else {
+    sortColumn.value = column;
+    sortDirection.value = "asc";
+  }
+  currentPage.value = 1;
+}
+
+// Modal / Actions
 const openModal = (action: "delete" | "update", userId: number) => {
+  errorMessage.value = "";
+  successMessage.value = "";
   showModal.value = true;
   modalAction.value = action;
   selectedUserId.value = userId;
@@ -50,10 +117,6 @@ const openModal = (action: "delete" | "update", userId: number) => {
   }
 };
 
-/**
- * Handler for when the Active dropdown is changed.
- * Updates temporary state and opens the modal.
- */
 const handleActiveChange = (userId: number, event: Event) => {
   const newValue = (event.target as HTMLSelectElement).value === "true";
   const current = tempUserStatus.get(userId);
@@ -63,10 +126,6 @@ const handleActiveChange = (userId: number, event: Event) => {
   openModal("update", userId);
 };
 
-/**
- * Handler for when the Role dropdown is changed.
- * Updates temporary state and opens the modal.
- */
 const handleStaffChange = (userId: number, event: Event) => {
   const newValue = (event.target as HTMLSelectElement).value === "true";
   const current = tempUserStatus.get(userId);
@@ -76,10 +135,7 @@ const handleStaffChange = (userId: number, event: Event) => {
   openModal("update", userId);
 };
 
-/**
- * Computed properties to adjust modal text based on target user's status.
- */
- const modalHeading = computed(() => {
+const modalHeading = computed(() => {
   if (modalAction.value === "update" && modalOriginalStatus.value && modalOriginalStatus.value.is_staff) {
     return "<span style='color: red;'>Warning:</span> You are about to modify an admin account!";
   }
@@ -101,9 +157,9 @@ const confirmAction = async () => {
       });
       users.value = users.value.filter(user => user.id !== selectedUserId.value);
       tempUserStatus.delete(selectedUserId.value);
-      successMessage.value = "User deleted successfully!";
+      showSuccess("User deleted successfully!");
     } catch (error) {
-      errorMessage.value = "Failed to delete user.";
+      showError("Failed to delete user.");
     }
   } else if (modalAction.value === "update" && selectedUserId.value !== null) {
     const newStatus = tempUserStatus.get(selectedUserId.value);
@@ -118,9 +174,9 @@ const confirmAction = async () => {
       if (idx !== -1) {
         users.value[idx] = { ...users.value[idx], ...newStatus };
       }
-      successMessage.value = "User updated successfully!";
+      showSuccess("User updated successfully!");
     } catch (error) {
-      errorMessage.value = "Failed to update user.";
+      showError("Failed to update user.");
     }
   }
   showModal.value = false;
@@ -135,66 +191,126 @@ const cancelAction = () => {
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center min-h-screen p-8">
-    <h1 class="text-3xl font-bold text-white mb-4">Admin Dashboard</h1>
+  <div 
+    class="h-screen flex items-center justify-center px-4 bg-cover bg-center"
+    style="background-image: url('/background.png'); background-attachment: fixed;"
+  >
+    <div class="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg w-full max-w-4xl">
+      <h1 class="text-center text-3xl font-bold text-white mb-4">
+        Admin Dashboard
+      </h1>
 
-    <div v-if="successMessage" class="p-3 mb-4 text-green-500 rounded">{{ successMessage }}</div>
-    <div v-if="errorMessage" class="p-3 mb-4 text-red-500 rounded">{{ errorMessage }}</div>
+      <!-- Success / Error messages -->
+      <div v-if="successMessage" class="w-full text-center mb-4 bg-black/60 backdrop-blur-md px-4 py-2 rounded">
+        <p class="text-green-500 text-s">
+          {{ successMessage }}
+        </p>
+      </div>
+      <div v-if="errorMessage" class="w-full text-center mb-4 bg-black/60 backdrop-blur-md px-4 py-2 rounded">
+        <p class="text-red-500 text-s">
+          {{ errorMessage }}
+        </p>
+      </div>
 
-    <div class="w-full max-w-4xl bg-white/30 backdrop-blur-lg shadow-lg rounded-lg p-6">
-      <div class="overflow-x-auto rounded-t-lg">
-        <table class="min-w-full divide-y divide-gray-300 text-sm text-white">
+      <!-- Search Input -->
+      <div class="mb-4">
+        <input
+          type="text"
+          v-model="searchQuery"
+          placeholder="Search by ID or email..."
+          class="w-full p-3 rounded border border-gray-500 text-white placeholder:text-white/80 bg-gray-800/70 text-lg"
+        />
+      </div>
+
+      <div class="overflow-x-auto rounded-t-lg mt-4">
+        <table class="min-w-full table-fixed divide-y divide-gray-300 text-sm text-white">
           <thead class="bg-white/20 text-gray-900">
-            <tr>
-              <th class="px-4 py-2 text-left font-medium">ID</th>
-              <th class="px-4 py-2 text-left font-medium">Email</th>
-              <th class="px-4 py-2 text-center font-medium">Active</th>
-              <th class="px-4 py-2 text-center font-medium">Role</th>
-              <th class="px-4 py-2 text-center font-medium">Actions</th>
+            <tr class="h-12">
+              <th 
+                class="px-4 py-2 text-left font-medium cursor-pointer" 
+                style="width:80px;" 
+                @click="sortBy('id')"
+              >
+                ID <span v-if="sortColumn === 'id'">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
+              </th>
+              <th 
+                class="px-4 py-2 text-left font-medium cursor-pointer" 
+                style="width:300px;" 
+                @click="sortBy('email')"
+              >
+                Email <span v-if="sortColumn === 'email'">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
+              </th>
+              <th class="px-4 py-2 text-center font-medium" style="width:100px;">Active</th>
+              <th class="px-4 py-2 text-center font-medium" style="width:100px;">Role</th>
+              <th class="px-4 py-2 text-center font-medium" style="width:100px;">Actions</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-400">
-            <tr v-for="user in users" :key="user.id">
-              <td class="px-4 py-2">{{ user.id }}</td>
-              <td class="px-4 py-2">{{ user.email }}</td>
-              <td class="px-4 py-2 text-center">
+          <tbody class="divide-y divide-gray-400" style="min-height: 400px;">
+            <tr v-for="user in paginatedUsers" :key="user.id" class="h-12">
+              <td class="px-4 py-2" style="width:80px;">{{ user.id }}</td>
+              <td class="px-4 py-2" style="width:300px;">{{ user.email }}</td>
+              <td class="px-4 py-2 text-center" style="width:100px;">
                 <select 
                   :value="tempUserStatus.get(user.id)?.is_active"
                   @change="handleActiveChange(user.id, $event)"
-                  class="border border-gray-300 rounded px-2 py-1 bg-white text-black"
+                  class="border border-gray-300 rounded px-2 py-1 bg-white text-black w-full"
                 >
                   <option :value="true">Yes</option>
                   <option :value="false">No</option>
                 </select>
               </td>
-              <td class="px-4 py-2 text-center">
+              <td class="px-4 py-2 text-center" style="width:100px;">
                 <select 
                   :value="tempUserStatus.get(user.id)?.is_staff"
                   @change="handleStaffChange(user.id, $event)"
-                  class="border border-gray-300 rounded px-2 py-1 bg-white text-black"
+                  class="border border-gray-300 rounded px-2 py-1 bg-white text-black w-full"
                 >
                   <option :value="true">Admin</option>
                   <option :value="false">User</option>
                 </select>
               </td>
-              <td class="px-4 py-2 text-center">
+              <td class="px-4 py-2 text-center" style="width:100px;">
                 <button @click="openModal('delete', user.id)" class="delete-btn">
                   Delete
                 </button>
               </td>
             </tr>
+            <tr v-for="n in (10 - paginatedUsers.length)" :key="'empty-' + n" class="h-12">
+              <td class="px-4 py-4 text-center text-gray-500" colspan="5">—</td>
+            </tr>
           </tbody>
         </table>
       </div>
-      <!-- Pagination Placeholder -->
-      <div class="mt-4 flex justify-end space-x-2">
-        <button class="px-3 py-1 bg-gray-300 rounded text-white">«</button>
-        <button class="px-3 py-1 bg-blue-500 text-white rounded">1</button>
-        <button class="px-3 py-1 bg-gray-300 rounded text-white">»</button>
+
+      <!-- Pagination Controls with Highlighted Active Page -->
+      <div class="mt-4 flex justify-end space-x-2 items-center">
+        <button
+          class="px-3 py-1 bg-gray-300 rounded text-white"
+          :disabled="currentPage === 1"
+          @click="currentPage--"
+        >
+          «
+        </button>
+        <button
+          v-for="page in totalPages"
+          :key="page"
+          class="px-3 py-1 rounded transition-colors duration-300"
+          :class="currentPage === page ? 'bg-blue-500 text-blue-400 font-bold shadow-md' : 'bg-gray-300 text-white'"
+          @click="currentPage = page"
+        >
+          {{ page }}
+        </button>
+        <button
+          class="px-3 py-1 bg-gray-300 rounded text-white"
+          :disabled="currentPage === totalPages"
+          @click="currentPage++"
+        >
+          »
+        </button>
       </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Modal Confirmation Popup -->
     <div v-if="showModal" class="fixed inset-0 flex items-center justify-center bg-black/50">
       <div class="rounded-lg bg-white/20 backdrop-blur-lg p-8 shadow-2xl max-w-sm border border-white/30">
         <h2 class="text-lg font-bold text-white" v-html="modalHeading"></h2>
