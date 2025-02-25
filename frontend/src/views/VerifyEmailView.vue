@@ -142,7 +142,9 @@ input {
 }
 
 input:focus {
-  border-color: #42b883;
+  outline: none;
+  border-color: #ffffff;
+  box-shadow: 0 0 0 2px #525252;
 }
 
 button {

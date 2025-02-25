@@ -49,7 +49,7 @@ const logout = () => {
 }
 
 .nav-btn:hover {
-  background: rgb(45, 45, 45);
+  background: rgb(31, 47, 70);
 }
 
 /* Logout Button */

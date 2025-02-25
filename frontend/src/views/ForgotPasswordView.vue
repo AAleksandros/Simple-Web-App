@@ -124,3 +124,16 @@ const requestPasswordReset = async () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+input {
+  outline: none;
+  transition: border 0.3s ease-in-out;
+}
+
+input:focus {
+  outline: none;
+  border-color: #ffffff;
+  box-shadow: 0 0 0 2px #525252;
+}
+</style>

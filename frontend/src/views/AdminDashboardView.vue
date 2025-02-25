@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, reactive } from "vue";
+import { ref, onMounted, reactive, computed } from "vue";
 import api from "../api";
 import { useAuthStore } from "../stores/auth";
 
@@ -8,12 +8,12 @@ const users = ref<{ id: number; email: string; is_active: boolean; is_staff: boo
 const errorMessage = ref("");
 const successMessage = ref("");
 
+// Modal state
 const showModal = ref(false);
 const modalAction = ref<"delete" | "update" | null>(null);
 const selectedUserId = ref<number | null>(null);
 
-// For update modal, we store the new (temporary) status
-// and also store the original values for canceling.
+// For update, we use a reactive Map to store the temporary status per user
 const tempUserStatus = reactive(new Map<number, { is_active: boolean; is_staff: boolean }>());
 const modalOriginalStatus = ref<{ is_active: boolean; is_staff: boolean } | null>(null);
 
@@ -23,6 +23,7 @@ const fetchUsers = async () => {
       headers: { Authorization: `Bearer ${authStore.token}` },
     });
     users.value = response.data;
+    // Initialize temporary status for each user
     users.value.forEach(user => {
       tempUserStatus.set(user.id, { is_active: user.is_active, is_staff: user.is_staff });
     });
@@ -34,8 +35,8 @@ const fetchUsers = async () => {
 onMounted(fetchUsers);
 
 /**
- * Opens the modal.
- * For "update", we record the original status from the users array.
+ * Opens the modal for an action.
+ * For "update", record the original status.
  */
 const openModal = (action: "delete" | "update", userId: number) => {
   showModal.value = true;
@@ -51,7 +52,7 @@ const openModal = (action: "delete" | "update", userId: number) => {
 
 /**
  * Handler for when the Active dropdown is changed.
- * It updates the temporary state and opens the modal for confirmation.
+ * Updates temporary state and opens the modal.
  */
 const handleActiveChange = (userId: number, event: Event) => {
   const newValue = (event.target as HTMLSelectElement).value === "true";
@@ -64,16 +65,33 @@ const handleActiveChange = (userId: number, event: Event) => {
 
 /**
  * Handler for when the Role dropdown is changed.
+ * Updates temporary state and opens the modal.
  */
 const handleStaffChange = (userId: number, event: Event) => {
   const newValue = (event.target as HTMLSelectElement).value === "true";
   const current = tempUserStatus.get(userId);
   if (current) {
-    // Update only the staff value in the temporary status
     tempUserStatus.set(userId, { ...current, is_staff: newValue });
   }
   openModal("update", userId);
 };
+
+/**
+ * Computed properties to adjust modal text based on target user's status.
+ */
+ const modalHeading = computed(() => {
+  if (modalAction.value === "update" && modalOriginalStatus.value && modalOriginalStatus.value.is_staff) {
+    return "<span style='color: red;'>Warning:</span> You are about to modify an admin account!";
+  }
+  return "Are you sure you want to do that?";
+});
+
+const modalMessage = computed(() => {
+  if (modalAction.value === "update" && modalOriginalStatus.value && modalOriginalStatus.value.is_staff) {
+    return "Modifying an admin account may have significant consequences. Are you absolutely sure you want to proceed?";
+  }
+  return "This action may have consequences, are you absolutely sure?";
+});
 
 const confirmAction = async () => {
   if (modalAction.value === "delete" && selectedUserId.value !== null) {
@@ -96,7 +114,6 @@ const confirmAction = async () => {
         { is_active: newStatus.is_active, is_staff: newStatus.is_staff },
         { headers: { Authorization: `Bearer ${authStore.token}` } }
       );
-      // Update the user in the main array
       const idx = users.value.findIndex(u => u.id === selectedUserId.value);
       if (idx !== -1) {
         users.value[idx] = { ...users.value[idx], ...newStatus };
@@ -111,7 +128,6 @@ const confirmAction = async () => {
 
 const cancelAction = () => {
   if (modalAction.value === "update" && selectedUserId.value !== null && modalOriginalStatus.value) {
-    // Reset the temporary status for this user to the original values
     tempUserStatus.set(selectedUserId.value, { ...modalOriginalStatus.value });
   }
   showModal.value = false;
@@ -181,17 +197,13 @@ const cancelAction = () => {
     <!-- Modal -->
     <div v-if="showModal" class="fixed inset-0 flex items-center justify-center bg-black/50">
       <div class="rounded-lg bg-white/20 backdrop-blur-lg p-8 shadow-2xl max-w-sm border border-white/30">
-        <h2 class="text-lg font-bold text-white">Are you sure you want to do that?</h2>
-        <p class="mt-2 text-sm text-gray-200">
-          This action may have consequences, are you absolutely sure?
-        </p>
+        <h2 class="text-lg font-bold text-white" v-html="modalHeading"></h2>
+        <p class="mt-2 text-sm text-gray-200">{{ modalMessage }}</p>
         <div class="mt-4 flex gap-2">
-          <button @click="confirmAction"
-                  class="rounded-sm bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600">
+          <button @click="confirmAction" class="rounded-sm bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600">
             Yes, I'm sure
           </button>
-          <button @click="cancelAction"
-                  class="rounded-sm bg-gray-700 px-4 py-2 text-sm font-medium text-white hover:bg-gray-600">
+          <button @click="cancelAction" class="rounded-sm bg-gray-700 px-4 py-2 text-sm font-medium text-white hover:bg-gray-600">
             No, go back
           </button>
         </div>
@@ -201,7 +213,6 @@ const cancelAction = () => {
 </template>
 
 <style scoped>
-/* Delete button */
 .delete-btn {
   background-color: #e63946;
   color: white;
@@ -225,7 +236,6 @@ button {
   transition: background 0.3s ease-in-out;
 }
 
-/* Fix black-on-black button arrow issue */
 button svg {
   color: white;
 }

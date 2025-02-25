@@ -129,8 +129,8 @@ const resetPassword = async () => {
             class="w-full rounded-lg border-gray-300 p-3 text-sm bg-white/80 text-black"
             required
           />
-          <!-- Password Hint (Restored) -->
-          <p class="text-gray-300 text-xs mt-1">
+          <!-- Password Hint -->
+          <p class="text-gray-300 text-s mt-1">
             Password must be at least <strong>8 characters</strong> long, 
             contain <strong>uppercase</strong> & <strong>lowercase</strong> letters, 
             a <strong>number</strong>, and a <strong>special character</strong>.
@@ -174,7 +174,9 @@ input {
 }
 
 input:focus {
-  border-color: #42b883;
+  outline: none;
+  border-color: #ffffff;
+  box-shadow: 0 0 0 2px #525252;
 }
 
 button {
