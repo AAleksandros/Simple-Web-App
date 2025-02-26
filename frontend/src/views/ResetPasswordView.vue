@@ -145,11 +145,16 @@ const resetPassword = async () => {
       <!-- Show error if token is invalid -->
       <div
         v-if="!checkingToken && !tokenValid"
-        class="w-full text-center mt-4 bg-black/60 backdrop-blur-md px-4 py-2 rounded"
+        class="text-center mt-4"
       >
-        <p class="text-red-400 text-s">
-          This reset link is invalid or has expired.
-        </p>
+        <!-- Error Message Only -->
+        <div class="inline-block bg-black/60 backdrop-blur-md px-4 py-2 rounded">
+          <p class="text-red-500 text-s">
+            This reset link is invalid or has expired.
+          </p>
+        </div>
+
+        <!-- Button Outside of Error Background -->
         <button
           @click="router.push('/forgot-password')"
           class="mt-4 px-5 py-2 rounded-lg bg-yellow-500 text-white hover:bg-yellow-600 transition"

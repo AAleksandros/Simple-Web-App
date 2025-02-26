@@ -35,7 +35,7 @@ onMounted(async () => {
   }
 
   if (emailLastSent && currentTime - parseInt(emailLastSent) < 60000) {
-    console.log("⏳ Email recently sent. Skipping auto-resend.");
+    console.log("Email recently sent. Skipping auto-resend.");
     return;
   }
 

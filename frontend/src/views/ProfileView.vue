@@ -49,22 +49,27 @@ const updatePhoneNumber = () => {
   } else {
     profile.value.phone_number = "";
   }
+  isEditing.value = true;
 };
 
 const handlePhoneNumberInput = () => {
   phoneNumberWithoutCode.value = phoneNumberWithoutCode.value.replace(/[^0-9-\s]/g, "");
   errorMessage.value = "";
+  isEditing.value = true;
 };
 
 const sanitizeName = (value: string) => {
+  isEditing.value = true;
   return value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s-]/g, "");
 };
 
 const sanitizeCity = (value: string) => {
+  isEditing.value = true;
   return value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s-]/g, "");
 };
 
 const sanitizeAddress = () => {
+  isEditing.value = true;
   profile.value.address = profile.value.address.replace(/[^a-zA-Z0-9\s,.-]/g, "");
 };
 
@@ -261,8 +266,7 @@ onMounted(fetchProfile);
             id="firstName"
             type="text"
             v-model="profile.first_name"
-            @input="profile.first_name = sanitizeName(profile.first_name); errorMessage = ''"
-            :disabled="!isEditing"
+            @input="profile.first_name = sanitizeName(profile.first_name); errorMessage = ''; isEditing = true"
             placeholder="First Name"
             class="w-full rounded-lg border-gray-300 p-3 text-sm bg-white/80 text-black"
             required
@@ -276,8 +280,7 @@ onMounted(fetchProfile);
             id="lastName"
             type="text"
             v-model="profile.last_name"
-            @input="profile.last_name = sanitizeName(profile.last_name); errorMessage = ''"
-            :disabled="!isEditing"
+            @input="profile.last_name = sanitizeName(profile.last_name); errorMessage = ''; isEditing = true"
             placeholder="Last Name"
             class="w-full rounded-lg border-gray-300 p-3 text-sm bg-white/80 text-black"
             required
@@ -302,8 +305,7 @@ onMounted(fetchProfile);
           <!-- Phone Code Dropdown -->
           <select
             v-model="phoneNumberSelectedCountry"
-            @change="updatePhoneNumber"
-            :disabled="!isEditing"
+            @change="updatePhoneNumber(); isEditing = true"
             class="w-1/3 rounded-lg border-gray-300 p-3 text-sm bg-white/80 text-black"
           >
             <option
@@ -318,8 +320,7 @@ onMounted(fetchProfile);
           <input
             type="text"
             v-model="phoneNumberWithoutCode"
-            @input="updatePhoneNumber(); handlePhoneNumberInput(); errorMessage = ''"
-            :disabled="!isEditing"
+            @input="updatePhoneNumber(); handlePhoneNumberInput(); errorMessage = ''; isEditing = true"
             placeholder="Phone Number"
             class="w-2/3 rounded-lg border-gray-300 p-3 text-sm bg-white/80 text-black"
             required
@@ -332,7 +333,7 @@ onMounted(fetchProfile);
           <select
             id="profileCountry"
             v-model="profileSelectedCountry"
-            :disabled="!isEditing"
+            @change="isEditing = true"
             class="w-full rounded-lg border-gray-300 p-3 text-sm bg-white/80 text-black"
             required
           >
@@ -353,8 +354,7 @@ onMounted(fetchProfile);
             id="city"
             type="text"
             v-model="profile.city"
-            @input="profile.city = sanitizeCity(profile.city); errorMessage = ''"
-            :disabled="!isEditing"
+            @input="profile.city = sanitizeCity(profile.city); errorMessage = ''; isEditing = true"
             placeholder="City"
             class="w-full rounded-lg border-gray-300 p-3 text-sm bg-white/80 text-black"
             required
@@ -367,35 +367,24 @@ onMounted(fetchProfile);
           <textarea
             id="address"
             v-model="profile.address"
-            @input="sanitizeAddress(); errorMessage = ''"
-            :disabled="!isEditing"
+            @input="sanitizeAddress(); errorMessage = ''; isEditing = true"
             placeholder="Address"
             class="w-full rounded-lg border-gray-300 p-3 text-sm bg-white/80 text-black"
             required
           ></textarea>
         </div>
 
-        <!-- Buttons: Edit, Save, Cancel -->
-        <div class="flex space-x-2">
+        <!-- Buttons: Save, Cancel (appear only when editing) -->
+        <div v-if="isEditing" class="flex space-x-2">
           <button
-            v-if="!isEditing"
-            @click="isEditing = true"
-            type="button"
-            class="w-full rounded-lg bg-yellow-500 px-5 py-3 text-sm font-medium text-white hover:bg-yellow-600 transition"
-          >
-            Edit
-          </button>
-          <button
-            v-if="isEditing"
             type="submit"
             class="w-full rounded-lg bg-green-500 px-5 py-3 text-sm font-medium text-white hover:bg-green-600 transition"
           >
             Save
           </button>
           <button
-            v-if="isEditing"
-            @click="cancelEdit"
             type="button"
+            @click="cancelEdit"
             class="w-full rounded-lg bg-gray-500 px-5 py-3 text-sm font-medium text-white hover:bg-gray-600 transition"
           >
             Cancel
@@ -407,7 +396,6 @@ onMounted(fetchProfile);
 </template>
 
 <style scoped>
-/* Input & Select Field Styling */
 .input-field {
   width: 100%;
   padding: 10px;
@@ -434,27 +422,6 @@ input:focus {
   border-radius: 5px;
   background: rgba(255, 255, 255, 0.2);
   color: white;
-}
-
-.edit-btn {
-  background: #007bff;
-  padding: 10px;
-  border-radius: 5px;
-  font-weight: bold;
-}
-
-.save-btn {
-  background: #28a745;
-  padding: 10px;
-  border-radius: 5px;
-  font-weight: bold;
-}
-
-.cancel-btn {
-  background: #e63946;
-  padding: 10px;
-  border-radius: 5px;
-  font-weight: bold;
 }
 
 button:hover {

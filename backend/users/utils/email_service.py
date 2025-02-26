@@ -38,7 +38,7 @@ def send_password_reset_email(to_email: str, reset_token: str):
     try:
         client = EmailClient.from_connection_string(AZURE_CONNECTION_STRING)
         
-        reset_link = f"http://127.0.0.1:5173/reset-password?token={reset_token}"
+        reset_link = f"https://roughy-measured-ghastly.ngrok-free.app/reset-password?token={reset_token}"
         
         message = {
             "senderAddress": AZURE_SENDER_EMAIL,

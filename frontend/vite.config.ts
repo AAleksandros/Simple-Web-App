@@ -8,12 +8,14 @@ export default defineConfig({
     tailwindcss()
   ],
   server: {
-    host: "0.0.0.0",
+    host:"0.0.0.0", // "127.0.0.1"
     port: 5173,
     strictPort: true,
     allowedHosts: [
+      //"127.0.0.1",
+      //"localhost",
       "roughy-measured-ghastly.ngrok-free.app",
-      "https://8a6d-2a02-2149-8adf-6f00-76c9-7476-af5e-d6a4.ngrok-free.app",  // CHANGE
+      "https://b824-2a02-2149-8adf-6f00-9090-8539-7394-77e5.ngrok-free.app",  // CHANGE
     ],
     headers: {
       "Access-Control-Allow-Origin": "*",
