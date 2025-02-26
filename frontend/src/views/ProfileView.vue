@@ -124,8 +124,9 @@ const fetchProfile = async () => {
 
     // Ensure each field is a string
     Object.keys(profile.value).forEach((key) => {
-      if (profile.value[key] == null) {
-        profile.value[key] = "";
+      const k = key as keyof typeof profile.value;
+      if (profile.value[k] == null) {
+        profile.value[k] = "";
       }
     });
 
@@ -160,27 +161,33 @@ const fetchProfile = async () => {
 };
 
 const saveProfile = async () => {
+  // Trim all string fields
   Object.keys(profile.value).forEach((key) => {
-    if (typeof profile.value[key] === "string") {
-      profile.value[key] = profile.value[key].trim();
+    const k = key as keyof typeof profile.value;
+    if (typeof profile.value[k] === "string") {
+      profile.value[k] = profile.value[k].trim();
     }
   });
 
-  // Set profile country from the profile country dropdown
+  // Set profile country from the dropdown
   profile.value.country = profileSelectedCountry.value.name;
 
-  if (!profile.value.first_name ||
-      !profile.value.last_name ||
-      !profile.value.phone_number ||
-      !profile.value.country ||
-      !profile.value.city ||
-      !profile.value.address) {
+  if (
+    !profile.value.first_name ||
+    !profile.value.last_name ||
+    !profile.value.phone_number ||
+    !profile.value.country ||
+    !profile.value.city ||
+    !profile.value.address
+  ) {
     errorMessage.value = "All fields must be filled in.";
     return;
   }
 
-  if (!validateName(profile.value.first_name) ||
-      !validateName(profile.value.last_name)) {
+  if (
+    !validateName(profile.value.first_name) ||
+    !validateName(profile.value.last_name)
+  ) {
     return;
   }
 
@@ -191,13 +198,18 @@ const saveProfile = async () => {
   if (!isPhoneNumberValid()) return;
 
   try {
+    // Update phone number using selected country code
     profile.value.phone_number = `${phoneNumberSelectedCountry.value.phoneCode} ${phoneNumberWithoutCode.value.trim()}`;
 
     await api.put("profile/", profile.value);
     successMessage.value = "Profile updated successfully!";
     isEditing.value = false;
     isFirstTimeUser.value = false;
+    
+    // Update localStorage with new profile data
     localStorage.setItem("profile", JSON.stringify(profile.value));
+    // **New:** update originalProfile to the newly saved data
+    originalProfile.value = { ...profile.value };
 
     setTimeout(() => {
       successMessage.value = "";
