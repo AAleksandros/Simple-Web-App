@@ -34,22 +34,35 @@ const register = async () => {
       confirm_password: confirmPassword.value,
     });
 
+    // Registration successful
     localStorage.setItem("pending_verification_email", email.value);
     localStorage.setItem("email_last_sent", Date.now().toString());
 
-    successMessage.value = "Registration successful! Redirecting to email verification...";
-    
-    setTimeout(() => router.push("/verify-email"), 2000);
+    successMessage.value =
+      "Registration successful! Redirecting to email verification page soon...";
+    setTimeout(() => {
+      router.push("/verify-email").catch((err) =>
+        console.error("Navigation error:", err)
+      );
+    }, 5000);
   } catch (error: any) {
     const apiError = error.response?.data?.error;
 
+    // Handle "User already exists but is not verified" case
     if (apiError?.includes("User already exists but is not verified")) {
-      console.log("Email exists but not verified. Redirecting to /verify-email...");
+      console.log("Email exists but not verified. Displaying message then redirecting...");
 
       localStorage.setItem("pending_verification_email", email.value);
       localStorage.setItem("email_last_sent", Date.now().toString());
-      
-      return router.push("/verify-email");
+
+      successMessage.value =
+        "This email is already registered but not verified. Redirecting to verification page soon...";
+      setTimeout(() => {
+        router.push("/verify-email").catch((err) =>
+          console.error("Navigation error:", err)
+        );
+      }, 5000);
+      return;
     }
 
     errorMessage.value = apiError || "Registration failed.";
@@ -60,17 +73,29 @@ const register = async () => {
 </script>
 
 <template>
-  <div class="pt-30 pb-30 flex items-center justify-center px-4 bg-cover bg-center overflow-y-auto"
-       style="background-image: url('/background.png'); background-attachment: fixed;">
-    
+  <div
+    class="pt-30 pb-30 flex items-center justify-center px-4 bg-cover bg-center overflow-y-auto"
+    style="background-image: url('/background.png'); background-attachment: fixed;"
+  >
     <div class="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg max-w-md w-full">
-      <h1 class="text-center text-2xl font-bold text-white sm:text-3xl">Create an Account</h1>
+      <h1 class="text-center text-2xl font-bold text-white sm:text-3xl">
+        Create an Account
+      </h1>
       <p class="mt-2 text-center text-gray-200">Sign up to get started.</p>
 
-      <div v-if="errorMessage" class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded">
+      <!-- Error Message -->
+      <div
+        v-if="errorMessage"
+        class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded"
+      >
         <p class="text-red-500 text-s">{{ errorMessage }}</p>
       </div>
-      <div v-if="successMessage" class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded">
+
+      <!-- Success Message -->
+      <div
+        v-if="successMessage"
+        class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded"
+      >
         <p class="text-green-400 text-s">{{ successMessage }}</p>
       </div>
 
@@ -96,7 +121,10 @@ const register = async () => {
             class="w-full rounded-lg border-gray-100 p-3 text-sm text-white"
           />
           <p class="text-gray-200 text-s mt-1">
-            Password must be at least <strong>8 characters</strong> long, contain <strong>uppercase</strong> & <strong>lowercase</strong> letters, a <strong>number</strong>, and a <strong>special character</strong>.
+            Password must be at least <strong>8 characters</strong> long, contain
+            <strong>uppercase</strong> & <strong>lowercase</strong> letters, a
+            <strong>number</strong>, and a
+            <strong>special character</strong>.
           </p>
         </div>
 
@@ -124,7 +152,10 @@ const register = async () => {
 
         <p class="text-center text-s text-black">
           Already have an account?
-          <router-link to="/login" class="underline text-blue-400 hover:text-blue-600">
+          <router-link
+            to="/login"
+            class="underline text-blue-400 hover:text-blue-600"
+          >
             Log in
           </router-link>
         </p>
@@ -175,21 +206,8 @@ input {
   border-radius: 5px;
 }
 
-.password-hint {
-  font-size: 14px;
-  color: #666;
-  margin-top: -10px;
-  margin-bottom: 10px;
-}
-
 button:disabled {
   background: gray;
-}
-
-.success {
-  color: green;
-  margin-top: 10px;
-  white-space: pre-line;
 }
 
 .error {
