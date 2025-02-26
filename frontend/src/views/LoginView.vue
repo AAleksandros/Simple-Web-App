@@ -8,12 +8,19 @@ import axios from "axios";
 const email = ref("");
 const password = ref("");
 const errorMessage = ref("");
+const successMessage = ref("");
 
 const authStore = useAuthStore();
 const router = useRouter();
 
 const login = async () => {
   errorMessage.value = "";
+  successMessage.value = "";
+
+  if (!email.value.trim() || !password.value.trim()) {
+    errorMessage.value = "Email and password are required.";
+    return;
+  }
 
   try {
     const response = await api.post("login/", {
@@ -25,15 +32,23 @@ const login = async () => {
 
     if (response.data.access && response.data.user) {
       if (!response.data.user.is_active) {
-        console.log("Redirecting unverified user to /verify-email...");
+        console.log("User not active. Preparing to redirect to verify-email...");
         localStorage.setItem("pending_verification_email", email.value);
         localStorage.setItem("email_last_sent", Date.now().toString());
-        return router.push("/verify-email");
+        successMessage.value = "Your email is not verified. Redirecting to verification page soon...";
+        setTimeout(() => {
+          router.push("/verify-email").catch((err) => console.error("Navigation error:", err));
+        }, 5000);
+        return;
       }
 
-      authStore.login(response.data.access, response.data.user);
+      // Pass both access and refresh tokens.
+      authStore.login(response.data.access, response.data.refresh, response.data.user);
+
       console.log("Redirecting to dashboard...");
-      router.push(response.data.user.is_staff ? "/admin-dashboard" : "/dashboard");
+      router.push(response.data.user.is_staff ? "/admin-dashboard" : "/dashboard").catch((err) =>
+        console.error("Navigation error:", err)
+      );
     } else {
       throw new Error("Invalid server response.");
     }
@@ -41,40 +56,57 @@ const login = async () => {
     if (axios.isAxiosError(err) && err.response) {
       const apiError = err.response.data;
 
-      // Handle unverified email case without logging an error
       if (apiError?.error?.includes("Email not verified")) {
-        console.log("Redirecting to /verify-email after failed login due to unverified email...");
         localStorage.setItem("pending_verification_email", email.value);
         localStorage.setItem("email_last_sent", Date.now().toString());
-        return router.push("/verify-email");
+        successMessage.value = "Your email is not verified. Redirecting to verification page soon...";
+        setTimeout(() => {
+          router.push("/verify-email").catch((err) =>
+            console.error("Navigation error:", err)
+          );
+        }, 5000);
+        return;
       }
 
-      console.error("Unexpected Login Error:", err);
-      errorMessage.value = apiError?.error || "Invalid email or password.";
+      errorMessage.value =
+        apiError?.non_field_errors?.[0] || apiError?.error || "Invalid email or password.";
     } else {
-      console.error("Unexpected Login Exception:", err);
       errorMessage.value = "An unexpected error occurred.";
     }
   }
 };
 
 const goToForgotPassword = () => {
-  router.push("/forgot-password");
+  router.push("/forgot-password").catch((err) =>
+    console.error("Navigation error:", err)
+  );
 };
 </script>
 
 <template>
-  <div class="pt-30 pb-30 flex items-center justify-center px-4 bg-cover bg-center overflow-y-auto" 
-       style="background-image: url('/background.png'); background-attachment: fixed;">
-    
+  <div
+    class="pt-30 pb-30 flex items-center justify-center px-4 bg-cover bg-center overflow-y-auto"
+    style="background-image: url('/background.png'); background-attachment: fixed;"
+  >
     <div class="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg max-w-md w-full">
       <h1 class="text-center text-2xl font-bold text-white sm:text-3xl">Login Form</h1>
       <p class="mt-2 text-center text-white">Sign in to your account below.</p>
 
       <form @submit.prevent="login" class="mt-6 space-y-4">
         <!-- Error Message Container -->
-        <div v-if="errorMessage" class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded">
+        <div
+          v-if="errorMessage"
+          class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded"
+        >
           <p class="text-red-500 text-s">{{ errorMessage }}</p>
+        </div>
+
+        <!-- Redirect Message Container -->
+        <div
+          v-if="successMessage"
+          class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded"
+        >
+          <p class="text-green-400 text-s">{{ successMessage }}</p>
         </div>
 
         <div>
@@ -108,7 +140,10 @@ const goToForgotPassword = () => {
 
         <p class="text-center text-s text-black">
           No account?
-          <router-link to="/register" class="underline text-blue-400 hover:text-blue-600">
+          <router-link
+            to="/register"
+            class="underline text-blue-400 hover:text-blue-600"
+          >
             Sign up
           </router-link>
         </p>
@@ -166,7 +201,6 @@ input {
   border: 1px solid #ddd;
   border-radius: 5px;
 }
-
 
 button:disabled {
   background: gray;

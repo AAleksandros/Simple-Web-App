@@ -11,7 +11,8 @@ interface User {
 }
 
 export const useAuthStore = defineStore("auth", () => {
-  const token = ref<string | null>(localStorage.getItem("access_token") || null);
+  const accessToken = ref<string | null>(localStorage.getItem("access_token") || null);
+  const refreshToken = ref<string | null>(localStorage.getItem("refresh_token") || null);
   const router = useRouter();
 
   const parseUserData = (): User | null => {
@@ -26,18 +27,15 @@ export const useAuthStore = defineStore("auth", () => {
 
   const user = ref<User | null>(parseUserData());
 
-  const isAuthenticated = computed(() => !!token.value);
+  const isAuthenticated = computed(() => !!accessToken.value);
   const isAdmin = computed(() => user.value?.is_staff === true);
 
   const fetchUserProfile = async () => {
     try {
       const response = await api.get("profile/");
       const profile = response.data;
-
-      // Check if essential profile fields are empty
       const isProfileIncomplete =
         !profile.phone_number || !profile.country || !profile.city || !profile.address;
-
       return isProfileIncomplete;
     } catch (error) {
       console.error("Error fetching profile data:", error);
@@ -45,22 +43,22 @@ export const useAuthStore = defineStore("auth", () => {
     }
   };
 
-  const login = async (newToken: string, userData: User) => {
-    token.value = newToken;
+  const login = async (newAccess: string, newRefresh: string, userData: User) => {
+    accessToken.value = newAccess;
+    refreshToken.value = newRefresh;
     user.value = userData;
-    localStorage.setItem("access_token", newToken);
+    localStorage.setItem("access_token", newAccess);
+    localStorage.setItem("refresh_token", newRefresh);
     localStorage.setItem("user", JSON.stringify(userData));
 
     try {
       if (!userData.is_staff) {
         const isProfileIncomplete = await fetchUserProfile();
-
         if (isProfileIncomplete) {
           router.push("/profile");
           return;
         }
       }
-
       // Default redirection based on user type
       router.push(userData.is_staff ? "/admin-dashboard" : "/dashboard");
     } catch (error) {
@@ -70,19 +68,21 @@ export const useAuthStore = defineStore("auth", () => {
   };
 
   const logout = () => {
-    token.value = null;
+    accessToken.value = null;
+    refreshToken.value = null;
     user.value = null;
     localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
     localStorage.removeItem("profile");
     router.push("/login");
     window.location.reload();
   };
 
-  // Ensure user data updates on changes
-  watch(token, () => {
+  // Ensure user data updates when the token changes
+  watch(accessToken, () => {
     user.value = parseUserData();
   });
 
-  return { token, user, isAuthenticated, isAdmin, login, logout };
+  return { accessToken, refreshToken, user, isAuthenticated, isAdmin, login, logout };
 });
