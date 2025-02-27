@@ -48,7 +48,6 @@ const requestPasswordReset = async () => {
 
   try {
     const response = await api.post("forgot-password/", { email: email.value });
-    // Use the API value from the retry-after header if available; fallback to 60
     const retryAfter = Number(response.headers["retry-after"]) || 60;
     cooldownSeconds.value = retryAfter;
     localStorage.setItem("last_reset_request", Date.now().toString());

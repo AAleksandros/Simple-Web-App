@@ -169,7 +169,6 @@ const saveProfile = async () => {
     }
   });
 
-  // Set profile country from the dropdown
   profile.value.country = profileSelectedCountry.value.name;
 
   if (
@@ -198,7 +197,6 @@ const saveProfile = async () => {
   if (!isPhoneNumberValid()) return;
 
   try {
-    // Update phone number using selected country code
     profile.value.phone_number = `${phoneNumberSelectedCountry.value.phoneCode} ${phoneNumberWithoutCode.value.trim()}`;
 
     await api.put("profile/", profile.value);
@@ -208,7 +206,6 @@ const saveProfile = async () => {
     
     // Update localStorage with new profile data
     localStorage.setItem("profile", JSON.stringify(profile.value));
-    // **New:** update originalProfile to the newly saved data
     originalProfile.value = { ...profile.value };
 
     setTimeout(() => {

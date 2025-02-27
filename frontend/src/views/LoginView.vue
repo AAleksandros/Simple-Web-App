@@ -9,6 +9,7 @@ const email = ref("");
 const password = ref("");
 const errorMessage = ref("");
 const successMessage = ref("");
+const loading = ref(false);
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -16,9 +17,11 @@ const router = useRouter();
 const login = async () => {
   errorMessage.value = "";
   successMessage.value = "";
+  loading.value = true;
 
   if (!email.value.trim() || !password.value.trim()) {
     errorMessage.value = "Email and password are required.";
+    loading.value = false;
     return;
   }
 
@@ -73,6 +76,8 @@ const login = async () => {
     } else {
       errorMessage.value = "An unexpected error occurred.";
     }
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -92,23 +97,15 @@ const goToForgotPassword = () => {
       <h1 class="text-center text-2xl font-bold text-white sm:text-3xl">Login Form</h1>
       <p class="mt-2 text-center text-white">Sign in to your account below.</p>
 
+      <div v-if="errorMessage" class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded">
+        <p class="text-red-500 text-s">{{ errorMessage }}</p>
+      </div>
+
+      <div v-if="successMessage" class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded">
+        <p class="text-green-400 text-s">{{ successMessage }}</p>
+      </div>
+
       <form @submit.prevent="login" class="mt-6 space-y-4">
-        <!-- Error Message Container -->
-        <div
-          v-if="errorMessage"
-          class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded"
-        >
-          <p class="text-red-500 text-s">{{ errorMessage }}</p>
-        </div>
-
-        <!-- Redirect Message Container -->
-        <div
-          v-if="successMessage"
-          class="w-full text-center mt-2 bg-black/60 backdrop-blur-md px-4 py-2 rounded"
-        >
-          <p class="text-green-400 text-s">{{ successMessage }}</p>
-        </div>
-
         <div>
           <label for="email" class="sr-only">Email</label>
           <input
@@ -133,17 +130,15 @@ const goToForgotPassword = () => {
 
         <button
           type="submit"
+          :disabled="loading"
           class="w-full rounded-lg bg-green-600 px-5 py-3 text-sm font-medium text-white"
         >
-          Sign in
+          {{ loading ? "Signing in..." : "Sign in" }}
         </button>
 
         <p class="text-center text-s text-black">
           No account?
-          <router-link
-            to="/register"
-            class="underline text-blue-400 hover:text-blue-600"
-          >
+          <router-link to="/register" class="underline text-blue-400 hover:text-blue-600">
             Sign up
           </router-link>
         </p>

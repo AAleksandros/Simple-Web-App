@@ -173,7 +173,7 @@ const resetPassword = async () => {
           v-if="errorMessage"
           class="w-full text-center bg-black/60 backdrop-blur-md px-4 py-2 rounded"
         >
-          <p class="text-red-400 text-s">{{ errorMessage }}</p>
+          <p class="text-red-500 text-s">{{ errorMessage }}</p>
         </div>
         <div
           v-if="successMessage"
