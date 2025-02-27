@@ -176,33 +176,57 @@ class ResetPasswordView(APIView):
         confirm_password = request.data.get("confirm_password")
 
         if not token or not new_password or not confirm_password:
-            return Response({"error": "Token, new password, and confirmation are required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Token, new password, and confirmation are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         if new_password != confirm_password:
-            return Response({"error": "Passwords do not match."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Passwords do not match."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             # Check if token has already been used (blacklist check)
             if UsedPasswordResetToken.objects.filter(token=token).exists():
-                return Response({"error": "This reset link has already been used."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "This reset link has already been used."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             user = User.objects.get(password_reset_token=token)
 
             if not user.is_reset_token_valid():
-                return Response({"error": "This password reset link has expired. Please request a new one."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "This password reset link has expired. Please request a new one."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
+            # Check if the new password is the same as the current one
+            if user.check_password(new_password):
+                return Response(
+                    {"error": "Your new password cannot be the same as your old password."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Set new password and mark token as used
             user.set_password(new_password)
-
             UsedPasswordResetToken.objects.create(token=token)
-
             user.password_reset_token = None
             user.password_reset_requested_at = None
             user.save()
 
-            return Response({"message": "Password reset successfully. You can now log in."}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "Password reset successfully. You can now log in."},
+                status=status.HTTP_200_OK,
+            )
 
         except User.DoesNotExist:
-            return Response({"error": "Invalid or expired reset token."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Invalid or expired reset token."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         
 ### Validate Password Reset Token Before Showing Form
 class ValidateResetTokenView(APIView):
