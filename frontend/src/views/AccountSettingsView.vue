@@ -5,16 +5,20 @@ import api from "../api";
 
 // Change Email
 const newEmail = ref("");
+const emailVerificationCode = ref("");
 const emailChangeMessage = ref("");
 const emailChangeError = ref("");
 const loadingEmail = ref(false);
+const loadingVerify = ref(false);
+const showVerifyEmailField = ref(false);
 
+// Cooldown state for change email
 const emailCooldownActive = ref(false);
 const emailCooldownSeconds = ref(0);
 
 const router = useRouter();
 
-// Resume cooldown from localStorage if it exists
+// Resume cooldown from localStorage on mount
 onMounted(() => {
   const lastEmailChangeRequest = localStorage.getItem("last_email_change_request");
   const storedCooldown = localStorage.getItem("email_change_cooldown_seconds");
@@ -50,7 +54,7 @@ const changeEmail = async () => {
   try {
     const response = await api.post("change-email/", { new_email: newEmail.value });
     emailChangeMessage.value = response.data.message;
-    // Start cooldown immediately after a successful request
+    showVerifyEmailField.value = true;
     const retryAfter = Number(response.headers["retry-after"]) || 60;
     emailCooldownSeconds.value = retryAfter;
     localStorage.setItem("last_email_change_request", Date.now().toString());
@@ -72,6 +76,24 @@ const changeEmail = async () => {
   }
 };
 
+const verifyNewEmail = async () => {
+  emailChangeMessage.value = "";
+  emailChangeError.value = "";
+  loadingVerify.value = true;
+  try {
+    const response = await api.post("verify-new-email/", { code: emailVerificationCode.value });
+    emailChangeMessage.value = response.data.message;
+    showVerifyEmailField.value = false;
+    const profileResponse = await api.get("profile/");
+    localStorage.setItem("profile", JSON.stringify(profileResponse.data));
+    newEmail.value = "";
+    emailVerificationCode.value = "";
+  } catch (error: any) {
+    emailChangeError.value = error.response?.data?.error || "Verification failed.";
+  } finally {
+    loadingVerify.value = false;
+  }
+};
 
 // Change Password
 const oldPassword = ref("");
@@ -121,32 +143,20 @@ const goBack = () => {
 </script>
 
 <template>
-  <!-- Full-page container with background -->
-  <div
-    class="pt-30 pb-30 flex items-center justify-center px-4 bg-cover bg-center overflow-y-auto"
-    style="background-image: url('/background.png'); background-attachment: fixed;"
-  >
-    <!-- Semi-transparent, blurred container -->
+  <div class="pt-30 pb-30 flex items-center justify-center px-4 bg-cover bg-center overflow-y-auto"
+       style="background-image: url('/background.png'); background-attachment: fixed;">
     <div class="bg-white/30 backdrop-blur-lg p-8 rounded-lg shadow-lg max-w-md w-full border border-white/20">
-      <h1 class="text-center text-2xl font-bold text-white sm:text-3xl">
-        Account Settings
-      </h1>
+      <h1 class="text-center text-2xl font-bold text-white sm:text-3xl">Account Settings</h1>
 
       <!-- Change Email Section -->
       <div class="mt-6 space-y-4">
         <h2 class="text-lg font-semibold text-white">Change Email</h2>
 
         <!-- Error / Success Messages for Email Change -->
-        <div
-          v-if="emailChangeError"
-          class="w-full text-center bg-black/60 backdrop-blur-md px-4 py-2 rounded"
-        >
+        <div v-if="emailChangeError" class="w-full text-center bg-black/60 backdrop-blur-md px-4 py-2 rounded">
           <p class="text-red-500 text-s">{{ emailChangeError }}</p>
         </div>
-        <div
-          v-if="emailChangeMessage"
-          class="w-full text-center bg-black/60 backdrop-blur-md px-4 py-2 rounded"
-        >
+        <div v-if="emailChangeMessage" class="w-full text-center bg-black/60 backdrop-blur-md px-4 py-2 rounded">
           <p class="text-green-400 text-s">{{ emailChangeMessage }}</p>
         </div>
 
@@ -158,7 +168,7 @@ const goBack = () => {
           class="w-full rounded-lg border-gray-300 p-3 text-sm bg-white/80 text-black"
         />
 
-        <!-- Change Email Button with cooldown logic -->
+        <!-- Change Email Button with cooldown -->
         <button
           @click="changeEmail"
           :disabled="loadingEmail || emailCooldownActive"
@@ -168,9 +178,26 @@ const goBack = () => {
             Wait {{ emailCooldownSeconds }}s
           </template>
           <template v-else>
-            {{ loadingEmail ? "Changing..." : "Change Email" }}
+            {{ loadingEmail ? "Sending..." : "Send Verification Code" }}
           </template>
         </button>
+        
+        <!-- Verification Input & Button: Show only if a change-email request was sent -->
+        <div v-if="showVerifyEmailField" class="mt-4 space-y-2">
+          <input
+            type="text"
+            v-model="emailVerificationCode"
+            placeholder="Enter verification code"
+            class="w-full rounded-lg border-gray-300 p-3 text-sm bg-white/80 text-black"
+          />
+          <button
+            @click="verifyNewEmail"
+            :disabled="loadingVerify"
+            class="w-full rounded-lg bg-blue-600 px-5 py-3 text-sm font-medium text-white hover:bg-blue-700 transition disabled:bg-gray-500"
+          >
+            {{ loadingVerify ? "Verifying..." : "Verify Email Change" }}
+          </button>
+        </div>
       </div>
 
       <!-- Change Password Section -->
@@ -178,16 +205,10 @@ const goBack = () => {
         <h2 class="text-lg font-semibold text-white">Change Password</h2>
 
         <!-- Error / Success Messages for Password Change -->
-        <div
-          v-if="passwordChangeError"
-          class="w-full text-center bg-black/60 backdrop-blur-md px-4 py-2 rounded"
-        >
+        <div v-if="passwordChangeError" class="w-full text-center bg-black/60 backdrop-blur-md px-4 py-2 rounded">
           <p class="text-red-500 text-s">{{ passwordChangeError }}</p>
         </div>
-        <div
-          v-if="passwordChangeMessage"
-          class="w-full text-center bg-black/60 backdrop-blur-md px-4 py-2 rounded"
-        >
+        <div v-if="passwordChangeMessage" class="w-full text-center bg-black/60 backdrop-blur-md px-4 py-2 rounded">
           <p class="text-green-400 text-s">{{ passwordChangeMessage }}</p>
         </div>
 
@@ -214,12 +235,6 @@ const goBack = () => {
           placeholder="Confirm new password"
           class="w-full rounded-lg border-gray-300 p-3 text-sm bg-white/80 text-black"
         />
-        <p class="text-gray-200 text-s mt-1">
-            Password must be at least <strong>8 characters</strong> long, contain
-            <strong>uppercase</strong> & <strong>lowercase</strong> letters, a
-            <strong>number</strong>, and a
-            <strong>special character</strong>.
-          </p>
 
         <!-- Change Password Button -->
         <button
@@ -231,13 +246,13 @@ const goBack = () => {
         </button>
       </div>
 
-      <!-- Back Button -->
+      <!-- Back Button 
       <button
         @click="goBack"
         class="mt-6 w-full rounded-lg bg-gray-700 px-5 py-3 text-sm font-medium text-white hover:bg-gray-600 transition"
       >
         Back to Dashboard
-      </button>
+      </button> -->
     </div>
   </div>
 </template>
