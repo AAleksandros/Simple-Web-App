@@ -9,7 +9,10 @@ from .views import (
     ResetPasswordView,
     ResendVerificationEmailView,
     UserProfileView,
-    ValidateResetTokenView
+    ValidateResetTokenView,
+    ChangeEmailView, 
+    VerifyNewEmailView, 
+    ChangePasswordView
 )
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -18,6 +21,7 @@ urlpatterns = [
     path("login/", CustomTokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("profile/", UserProfileView.as_view(), name="user_profile"),
+    path("change-password/", ChangePasswordView.as_view(), name="change-password"),
 
     # Admin Management
     path("admin/users/", AdminUserListView.as_view(), name="admin_users"),
@@ -29,6 +33,8 @@ urlpatterns = [
     path("forgot-password/", ForgotPasswordView.as_view(), name="forgot_password"),
     path("reset-password/", ResetPasswordView.as_view(), name="reset_password"),
     path("validate-reset-token/", ValidateResetTokenView.as_view(), name="validate-reset-token"),
+    path("change-email/", ChangeEmailView.as_view(), name="change-email"),
+    path("verify-new-email/", VerifyNewEmailView.as_view(), name="verify-new-email"),
 
     # Protected Route (For Testing Authentication)
     path("protected/", CustomTokenObtainPairView.as_view(), name="protected"),

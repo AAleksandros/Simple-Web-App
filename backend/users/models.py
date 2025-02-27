@@ -63,6 +63,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     verification_code = models.CharField(max_length=6, blank=True, null=True)
     verification_code_sent_at = models.DateTimeField(null=True, blank=True)
 
+    # Auth user email change Code
+    pending_email = models.EmailField(blank=True, null=True, verbose_name="Pending New Email")
+    email_change_code = models.CharField(max_length=6, blank=True, null=True, verbose_name="Email Change Verification Code")
+    email_change_code_sent_at = models.DateTimeField(null=True, blank=True, verbose_name="Email Change Code Sent At")
+  
     # Password Reset Token
     password_reset_token = models.UUIDField(default=None, null=True, blank=True, unique=True)
     password_reset_requested_at = models.DateTimeField(null=True, blank=True)

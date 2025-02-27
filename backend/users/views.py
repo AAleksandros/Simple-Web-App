@@ -285,6 +285,114 @@ class UserProfileView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+### Change Email
+class ChangeEmailView(APIView):
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "change_email"
+
+    def post(self, request):
+        new_email = request.data.get("new_email")
+        if not new_email:
+            return Response({"error": "New email is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            validate_email(new_email)
+        except ValidationError:
+            return Response({"error": "Invalid email format."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if User.objects.filter(email=new_email).exists():
+            return Response({"error": "This email is already in use."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+
+        if user.email_change_code_sent_at and (now() - user.email_change_code_sent_at < timedelta(seconds=60)):
+            return Response({"error": "Please wait before requesting another email change."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
+        verification_code = generate_verification_code()
+        user.pending_email = new_email
+        user.email_change_code = verification_code
+        user.email_change_code_sent_at = now()
+        user.save()
+
+        send_verification_email(new_email, verification_code)
+
+        return Response({"message": "Verification code sent to new email. Please check your inbox."}, status=status.HTTP_200_OK)
+
+### Verify New Email
+class VerifyNewEmailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        code = request.data.get("code")
+        if not code:
+            return Response({"error": "Verification code is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+        if user.email_change_code != code:
+            return Response({"error": "Invalid verification code."}, status=status.HTTP_400_BAD_REQUEST)
+
+        expiration = user.email_change_code_sent_at + timedelta(hours=1)
+        if now() > expiration:
+            return Response({"error": "Verification code has expired."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.email = user.pending_email
+        user.pending_email = None
+        user.email_change_code = None
+        user.email_change_code_sent_at = None
+        user.save()
+
+        return Response({"message": "Email updated successfully."}, status=status.HTTP_200_OK)
+
+### Change Password
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        old_password = request.data.get("old_password")
+        new_password = request.data.get("new_password")
+        confirm_password = request.data.get("confirm_password")
+
+        if not old_password or not new_password or not confirm_password:
+            return Response({"error": "Old password, new password, and confirmation are required."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if new_password != confirm_password:
+            return Response({"error": "New passwords do not match."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+
+        if not user.check_password(old_password):
+            return Response({"error": "Old password is incorrect."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if user.check_password(new_password):
+            return Response({"error": "Your new password cannot be the same as your old password."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if len(new_password) < 8:
+            return Response({"error": "Password must be at least 8 characters long."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if not re.search(r"[A-Z]", new_password) or not re.search(r"[a-z]", new_password):
+            return Response({"error": "Password must contain at least one uppercase and one lowercase letter."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if not re.search(r"\d", new_password):
+            return Response({"error": "Password must contain at least one number."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", new_password):
+            return Response({"error": "Password must contain at least one special character."},
+                            status=status.HTTP_400_BAD_REQUEST)
+        email_username = user.email.split("@")[0].lower()
+        if email_username in new_password.lower():
+            return Response({"error": "Password is too similar to the email."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_password)
+        user.save()
+
+        return Response({"message": "Password updated successfully."}, status=status.HTTP_200_OK)
+
 ### Admin: Get All Users
 class AdminUserListView(APIView):
     permission_classes = [IsAdminUser]
