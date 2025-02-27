@@ -21,13 +21,15 @@ const logout = () => {
     <!-- Home Button -->
     <RouterLink to="/" class="nav-btn fixed top-4 left-4 z-50">Home</RouterLink>
 
-    <!-- Show these when NOT logged in -->
+    <!-- Show when NOT logged in -->
     <RouterLink v-if="!isAuthenticated" to="/register" class="nav-btn">Register</RouterLink>
     <RouterLink v-if="!isAuthenticated" to="/login" class="nav-btn">Login</RouterLink>
 
-    <!-- Show these when logged in -->
+    <!-- Show when logged in -->
     <RouterLink v-if="isAuthenticated" to="/dashboard" class="nav-btn">Dashboard</RouterLink>
     <RouterLink v-if="isAuthenticated && !isAdmin" to="/profile" class="nav-btn">Profile</RouterLink>
+    <!-- Account Settings button for all authenticated users -->
+    <RouterLink v-if="isAuthenticated" to="/account-settings" class="nav-btn">Account Settings</RouterLink>
     <RouterLink v-if="isAuthenticated && isAdmin" to="/admin-dashboard" class="nav-btn">Admin Panel</RouterLink>
 
     <!-- Logout Button -->
@@ -36,7 +38,6 @@ const logout = () => {
 </template>
 
 <style scoped>
-/* Floating Button Style */
 .nav-btn {
   background: black;
   color: white;
@@ -47,12 +48,9 @@ const logout = () => {
   border-radius: 6px;
   transition: background 0.3s ease-in-out, transform 0.2s ease-in-out;
 }
-
 .nav-btn:hover {
   background: rgb(31, 47, 70);
 }
-
-/* Logout Button */
 .logout-btn {
   background: #e63946;
   color: white;
@@ -64,7 +62,6 @@ const logout = () => {
   cursor: pointer;
   transition: background 0.3s ease-in-out, transform 0.2s ease-in-out;
 }
-
 .logout-btn:hover {
   background: #b71c1c;
 }

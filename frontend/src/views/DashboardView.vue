@@ -5,19 +5,16 @@ import { computed } from "vue";
 
 const router = useRouter();
 const authStore = useAuthStore();
-
-// Get user role (Admin or User)
 const isAdmin = computed(() => authStore.user?.is_staff === true);
 
-// Logout function
 const logout = () => {
   authStore.logout();
   router.push("/");
 };
 
-// Navigation functions
 const goToAdminPanel = () => router.push("/admin-dashboard");
 const goToProfile = () => router.push("/profile");
+const goToAccountSettings = () => router.push("/account-settings");
 </script>
 
 <template>
@@ -34,30 +31,30 @@ const goToProfile = () => router.push("/profile");
         You are successfully logged in.
       </p>
 
-      <!-- Admin Specific Message -->
+      <!-- Role-specific message -->
       <p v-if="isAdmin" class="mt-4 text-lg text-blue-300">
         Go to the <strong>Admin Panel</strong> to manage users and settings.
       </p>
-
-      <!-- User Specific Message -->
       <p v-else class="mt-4 text-lg text-green-300">
         Go to your <strong>Profile</strong> to view and edit your information.
       </p>
 
       <div class="mt-6 flex justify-center gap-4">
-        <!-- Admin Panel Button -->
         <button v-if="isAdmin" @click="goToAdminPanel"
           class="px-6 py-3 rounded-lg text-white bg-blue-500 hover:bg-blue-600 transition text-lg font-semibold">
           Go to Admin Panel
         </button>
-
-        <!-- Profile Button -->
         <button v-else @click="goToProfile"
           class="px-6 py-3 rounded-lg text-white bg-green-500 hover:bg-green-600 transition text-lg font-semibold">
           Go to Profile
         </button>
 
-        <!-- Logout Button -->
+        <!-- Account Settings Button -->
+        <button @click="goToAccountSettings"
+          class="px-6 py-3 rounded-lg text-white bg-purple-500 hover:bg-purple-600 transition text-lg font-semibold">
+          Account Settings
+        </button>
+
         <button @click="logout"
           class="px-6 py-3 rounded-lg text-white bg-red-500 hover:bg-red-600 transition text-lg font-semibold">
           Logout
@@ -71,7 +68,6 @@ const goToProfile = () => router.push("/profile");
 button {
   transition: background 0.3s ease-in-out;
 }
-
 h1 {
   text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
 }

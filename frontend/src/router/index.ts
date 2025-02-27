@@ -8,6 +8,7 @@ import VerifyEmailView from "../views/VerifyEmailView.vue";
 import ForgotPasswordView from "../views/ForgotPasswordView.vue";
 import ResetPasswordView from "../views/ResetPasswordView.vue";
 import ProfileView from "../views/ProfileView.vue";
+import AccountSettingsView from "../views/AccountSettingsView.vue";
 import { useAuthStore } from "../stores/auth";
 
 // User Dashboard Guard
@@ -33,6 +34,7 @@ const routes = [
   { path: "/login", component: LoginView, meta: { title: "Login - Web App" }, beforeEnter: guestGuard },
   { path: "/register", component: RegisterView, meta: { title: "Register - Web App" }, beforeEnter: guestGuard },
   { path: "/profile", component: ProfileView, meta: { title: "My Profile - Web App" }, beforeEnter: authGuard },
+  { path: "/account-settings", component: AccountSettingsView, meta: { title: "Account Settings - Web App" }, beforeEnter: authGuard },
   { path: "/dashboard", component: DashboardView, meta: { title: "Dashboard - Web App" }, beforeEnter: authGuard },
   { path: "/admin-dashboard", component: AdminDashboardView, meta: { title: "Admin Panel - Web App" }, beforeEnter: adminGuard },
 
