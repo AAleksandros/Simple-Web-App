@@ -255,6 +255,11 @@ class ValidateResetTokenView(APIView):
 
 ### User Login
 class CustomTokenObtainPairView(TokenObtainPairView):
+    # Set explicitly rather than via SIMPLE_JWT["TOKEN_OBTAIN_SERIALIZER"] so the
+    # wiring is visible here. Its errors land in non_field_errors, which
+    # LoginView.vue reads.
+    serializer_class = CustomTokenObtainPairSerializer
+
     def post(self, request, *args, **kwargs):
         email = request.data.get("email")
 
