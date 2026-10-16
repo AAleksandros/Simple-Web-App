@@ -54,7 +54,7 @@ class RegisterView(APIView):
 
         EMAIL_VERIFICATION_COOLDOWN = timedelta(seconds=60)
 
-        if user and not user.is_active:
+        if user and not user.email_verified:
             last_sent = user.verification_code_sent_at
             if last_sent and now() - last_sent < EMAIL_VERIFICATION_COOLDOWN:
                 return Response(
@@ -97,9 +97,16 @@ class VerifyEmailView(APIView):
         email = request.data.get("email")
         verification_code = request.data.get("code")
 
+        if not verification_code:
+            return Response({"error": "Verification code is required."}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             user = User.objects.get(email=email)
-            if user.verification_code == verification_code:
+            # The stored code is None once used, so require one to exist: otherwise None == None would match.
+            if user.email_verified:
+                return Response({"error": "Email is already verified."}, status=status.HTTP_400_BAD_REQUEST)
+            if user.verification_code and user.verification_code == verification_code:
+                user.email_verified = True
                 user.is_active = True
                 user.verification_code = None
                 user.save()
@@ -120,7 +127,7 @@ class ResendVerificationEmailView(APIView):
 
         try:
             user = User.objects.get(email=email)
-            if user.is_active:
+            if user.email_verified:
                 return Response({"message": "Email is already verified."}, status=status.HTTP_400_BAD_REQUEST)
 
             if not user.can_request_verification_code():
@@ -256,8 +263,9 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Check if the user is not active
-        if not user.is_active:
+        # Unverified: (re)send a code. A verified but admin-disabled user gets no
+        # code and falls through to simplejwt, which rejects inactive users.
+        if not user.email_verified:
             EMAIL_VERIFICATION_COOLDOWN = timedelta(seconds=60)
             last_sent = user.verification_code_sent_at
 
@@ -422,7 +430,7 @@ class AdminUserListView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        users = User.objects.all().values("id", "email", "is_active", "is_staff")
+        users = User.objects.all().values("id", "email", "email_verified", "is_active", "is_staff")
         return Response(users, status=status.HTTP_200_OK)
 
 ### Admin: Manage Users
@@ -433,7 +441,7 @@ class AdminUserDetailView(APIView):
         user = self.get_user(user_id)
         if not user:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-        return Response({"id": user.id, "email": user.email, "is_active": user.is_active, "is_staff": user.is_staff})
+        return Response({"id": user.id, "email": user.email, "email_verified": user.email_verified, "is_active": user.is_active, "is_staff": user.is_staff})
 
     def put(self, request, user_id):
         user = self.get_user(user_id)

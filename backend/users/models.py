@@ -25,6 +25,7 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("is_active", True)  # Superusers always active
+        extra_fields.setdefault("email_verified", True)
 
         return self.create_user(email, password, **extra_fields)
 
@@ -56,7 +57,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     city = models.CharField(max_length=100, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
 
+    # is_active = allowed to log in (admins toggle it); email_verified = owns the
+    # address. Kept separate so a verification code can never undo an admin disable.
     is_active = models.BooleanField(default=False, verbose_name="Active")
+    email_verified = models.BooleanField(default=False, verbose_name="Email Verified")
     is_staff = models.BooleanField(default=False, verbose_name="Staff Status")
 
     # Email Verification Code
