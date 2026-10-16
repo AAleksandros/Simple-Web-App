@@ -154,24 +154,19 @@ class ForgotPasswordView(APIView):
 
     def post(self, request):
         email = request.data.get("email")
-        try:
-            user = User.objects.get(email=email)
-            if not user.can_request_password_reset():
-                return Response(
-                    {"error": "Please wait before requesting another password reset."},
-                    status=status.HTTP_429_TOO_MANY_REQUESTS
-                )
+        user = User.objects.filter(email=email).first()
 
+        # Unknown email and per-user cooldown both get the same response as a
+        # real send; any difference would reveal which emails are registered.
+        if user and user.can_request_password_reset():
             # Invalidate the old reset token by generating a new one
-            user.password_reset_token = uuid.uuid4()  
+            user.password_reset_token = uuid.uuid4()
             user.password_reset_requested_at = now()
             user.save()
 
-            send_password_reset_email(email, str(user.password_reset_token)) 
+            send_password_reset_email(email, str(user.password_reset_token))
 
-            return Response({"message": "If this email exists, a reset link has been sent."}, status=status.HTTP_200_OK)
-        except User.DoesNotExist:
-            return Response({"message": "If this email exists, a reset link has been sent."}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"message": "If this email exists, a reset link has been sent."}, status=status.HTTP_200_OK)
 
 ### Reset Password
 class ResetPasswordView(APIView):
