@@ -3,16 +3,15 @@ services:
     image: postgres:15
     container_name: postgres_db
     restart: always
+    # POSTGRES_USER/PASSWORD/DB come from this file. ${...} interpolation would
+    # read the shell or a root .env, not env_file, and leave them blank.
     env_file:
       - ./backend/.env
-    environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      # Set POSTGRES_HOST_PORT if something on the host already uses 5432.
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
 
   backend:
     build:
