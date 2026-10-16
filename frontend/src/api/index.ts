@@ -1,8 +1,10 @@
 import axios from "axios";
 import { useAuthStore } from "../stores/auth";
 
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api";
+
 const api = axios.create({
-  baseURL: "https://b824-2a02-2149-8adf-6f00-9090-8539-7394-77e5.ngrok-free.app/api", // CHANGE
+  baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
     "ngrok-skip-browser-warning": "true"
@@ -33,7 +35,7 @@ api.interceptors.response.use(
       if (refresh) {
         try {
           // Call the refresh endpoint, save new tokens and update auth store / headers
-          const { data } = await axios.post("https://154a-2a02-2149-8adf-6f00-9090-8539-7394-77e5.ngrok-free.app/api/token/refresh/", {
+          const { data } = await axios.post(`${API_URL}/token/refresh/`, {
             refresh,
           });
           localStorage.setItem("access_token", data.access);
