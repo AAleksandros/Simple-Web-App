@@ -32,3 +32,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ["email", "first_name", "last_name", "phone_number", "country", "city", "address"]
+
+class AdminUserUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ["is_active", "is_staff"]

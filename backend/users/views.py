@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework import status
 from .models import CustomUser, UsedPasswordResetToken
-from .serializers import UserProfileSerializer
+from .serializers import AdminUserUpdateSerializer, UserProfileSerializer
 from django.contrib.auth import get_user_model
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
@@ -448,14 +448,11 @@ class AdminUserDetailView(APIView):
         if not user:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        is_active = request.data.get("is_active")
-        is_staff = request.data.get("is_staff")
-
-        if is_active is not None:
-            user.is_active = bool(is_active)
-        if is_staff is not None:
-            user.is_staff = bool(is_staff)
-        user.save()
+        # BooleanField parses "false"/"0"/"off" correctly; bool("false") is True.
+        serializer = AdminUserUpdateSerializer(user, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
 
         return Response({"message": "User updated successfully"})
 
