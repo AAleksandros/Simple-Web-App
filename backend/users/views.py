@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework import status
 from .models import CustomUser, UsedPasswordResetToken
-from .serializers import UserProfileSerializer
+from .serializers import AdminUserUpdateSerializer, UserProfileSerializer
 from django.contrib.auth import get_user_model
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
@@ -54,7 +54,7 @@ class RegisterView(APIView):
 
         EMAIL_VERIFICATION_COOLDOWN = timedelta(seconds=60)
 
-        if user and not user.is_active:
+        if user and not user.email_verified:
             last_sent = user.verification_code_sent_at
             if last_sent and now() - last_sent < EMAIL_VERIFICATION_COOLDOWN:
                 return Response(
@@ -97,9 +97,16 @@ class VerifyEmailView(APIView):
         email = request.data.get("email")
         verification_code = request.data.get("code")
 
+        if not verification_code:
+            return Response({"error": "Verification code is required."}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             user = User.objects.get(email=email)
-            if user.verification_code == verification_code:
+            # The stored code is None once used, so require one to exist: otherwise None == None would match.
+            if user.email_verified:
+                return Response({"error": "Email is already verified."}, status=status.HTTP_400_BAD_REQUEST)
+            if user.verification_code and user.verification_code == verification_code:
+                user.email_verified = True
                 user.is_active = True
                 user.verification_code = None
                 user.save()
@@ -120,7 +127,7 @@ class ResendVerificationEmailView(APIView):
 
         try:
             user = User.objects.get(email=email)
-            if user.is_active:
+            if user.email_verified:
                 return Response({"message": "Email is already verified."}, status=status.HTTP_400_BAD_REQUEST)
 
             if not user.can_request_verification_code():
@@ -147,24 +154,19 @@ class ForgotPasswordView(APIView):
 
     def post(self, request):
         email = request.data.get("email")
-        try:
-            user = User.objects.get(email=email)
-            if not user.can_request_password_reset():
-                return Response(
-                    {"error": "Please wait before requesting another password reset."},
-                    status=status.HTTP_429_TOO_MANY_REQUESTS
-                )
+        user = User.objects.filter(email=email).first()
 
+        # Unknown email and per-user cooldown both get the same response as a
+        # real send; any difference would reveal which emails are registered.
+        if user and user.can_request_password_reset():
             # Invalidate the old reset token by generating a new one
-            user.password_reset_token = uuid.uuid4()  
+            user.password_reset_token = uuid.uuid4()
             user.password_reset_requested_at = now()
             user.save()
 
-            send_password_reset_email(email, str(user.password_reset_token)) 
+            send_password_reset_email(email, str(user.password_reset_token))
 
-            return Response({"message": "If this email exists, a reset link has been sent."}, status=status.HTTP_200_OK)
-        except User.DoesNotExist:
-            return Response({"message": "If this email exists, a reset link has been sent."}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"message": "If this email exists, a reset link has been sent."}, status=status.HTTP_200_OK)
 
 ### Reset Password
 class ResetPasswordView(APIView):
@@ -248,6 +250,11 @@ class ValidateResetTokenView(APIView):
 
 ### User Login
 class CustomTokenObtainPairView(TokenObtainPairView):
+    # Set explicitly rather than via SIMPLE_JWT["TOKEN_OBTAIN_SERIALIZER"] so the
+    # wiring is visible here. Its errors land in non_field_errors, which
+    # LoginView.vue reads.
+    serializer_class = CustomTokenObtainPairSerializer
+
     def post(self, request, *args, **kwargs):
         email = request.data.get("email")
 
@@ -256,8 +263,9 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Check if the user is not active
-        if not user.is_active:
+        # Unverified: (re)send a code. A verified but admin-disabled user gets no
+        # code and falls through to simplejwt, which rejects inactive users.
+        if not user.email_verified:
             EMAIL_VERIFICATION_COOLDOWN = timedelta(seconds=60)
             last_sent = user.verification_code_sent_at
 
@@ -422,7 +430,7 @@ class AdminUserListView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        users = User.objects.all().values("id", "email", "is_active", "is_staff")
+        users = User.objects.all().values("id", "email", "email_verified", "is_active", "is_staff")
         return Response(users, status=status.HTTP_200_OK)
 
 ### Admin: Manage Users
@@ -433,21 +441,18 @@ class AdminUserDetailView(APIView):
         user = self.get_user(user_id)
         if not user:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-        return Response({"id": user.id, "email": user.email, "is_active": user.is_active, "is_staff": user.is_staff})
+        return Response({"id": user.id, "email": user.email, "email_verified": user.email_verified, "is_active": user.is_active, "is_staff": user.is_staff})
 
     def put(self, request, user_id):
         user = self.get_user(user_id)
         if not user:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        is_active = request.data.get("is_active")
-        is_staff = request.data.get("is_staff")
-
-        if is_active is not None:
-            user.is_active = bool(is_active)
-        if is_staff is not None:
-            user.is_staff = bool(is_staff)
-        user.save()
+        # BooleanField parses "false"/"0"/"off" correctly; bool("false") is True.
+        serializer = AdminUserUpdateSerializer(user, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
 
         return Response({"message": "User updated successfully"})
 

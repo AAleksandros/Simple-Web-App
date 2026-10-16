@@ -1,1 +1,21 @@
-backend/backend/settings.py
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+*.sqlite3
+
+# Node / frontend build
+node_modules/
+frontend/dist/
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store

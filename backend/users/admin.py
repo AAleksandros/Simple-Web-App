@@ -6,14 +6,14 @@ class CustomUserAdmin(UserAdmin):
     """Admin panel customization for CustomUser."""
 
     model = CustomUser
-    list_display = ("email", "is_active", "is_staff", "is_superuser")
+    list_display = ("email", "email_verified", "is_active", "is_staff", "is_superuser")
     search_fields = ("email",)
     ordering = ("email",)
-    list_filter = ("is_active", "is_staff", "is_superuser")
+    list_filter = ("email_verified", "is_active", "is_staff", "is_superuser")
 
     fieldsets = (
         ("User Information", {"fields": ("email", "password")}),
-        ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
+        ("Permissions", {"fields": ("email_verified", "is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
     )
 
     add_fieldsets = (

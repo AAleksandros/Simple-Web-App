@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive, computed } from "vue";
 import api from "../api";
-import { useAuthStore } from "../stores/auth";
 
-const authStore = useAuthStore();
 const users = ref<{ id: number; email: string; is_active: boolean; is_staff: boolean }[]>([]);
 const errorMessage = ref("");
 const successMessage = ref("");
@@ -38,9 +36,7 @@ const showError = (msg: string) => {
 
 const fetchUsers = async () => {
   try {
-    const response = await api.get("admin/users/", {
-      headers: { Authorization: `Bearer ${authStore.token}` },
-    });
+    const response = await api.get("admin/users/");
     users.value = response.data;
     // Initialize temporary status for each user
     users.value.forEach(user => {
@@ -152,9 +148,7 @@ const modalMessage = computed(() => {
 const confirmAction = async () => {
   if (modalAction.value === "delete" && selectedUserId.value !== null) {
     try {
-      await api.delete(`admin/users/${selectedUserId.value}/`, {
-        headers: { Authorization: `Bearer ${authStore.token}` },
-      });
+      await api.delete(`admin/users/${selectedUserId.value}/`);
       users.value = users.value.filter(user => user.id !== selectedUserId.value);
       tempUserStatus.delete(selectedUserId.value);
       showSuccess("User deleted successfully!");
@@ -167,8 +161,7 @@ const confirmAction = async () => {
     try {
       await api.put(
         `admin/users/${selectedUserId.value}/`,
-        { is_active: newStatus.is_active, is_staff: newStatus.is_staff },
-        { headers: { Authorization: `Bearer ${authStore.token}` } }
+        { is_active: newStatus.is_active, is_staff: newStatus.is_staff }
       );
       const idx = users.value.findIndex(u => u.id === selectedUserId.value);
       if (idx !== -1) {

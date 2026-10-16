@@ -4,7 +4,6 @@ djangorestframework-simplejwt
 psycopg2-binary
 django-cors-headers
 gunicorn
-djangorestframework-simplejwt
 python-dotenv
 drf-yasg
 requests
